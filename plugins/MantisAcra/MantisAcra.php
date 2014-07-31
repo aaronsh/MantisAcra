@@ -7,6 +7,8 @@
  */
 require_once( config_get( 'class_path' ) . 'MantisPlugin.class.php' );
 
+require('BugDataAcraExt.php');
+
 class MantisAcraPlugin extends MantisPlugin {
 
     /**
@@ -16,7 +18,6 @@ class MantisAcraPlugin extends MantisPlugin {
         $this->name = plugin_lang_get( 'title' );
         $this->description = plugin_lang_get( 'description' );
         $this->page = '';
-
         $this->version = '1.0';
         $this->requires = array(
             'MantisCore' => '1.2.0',
@@ -66,11 +67,10 @@ class MantisAcraPlugin extends MantisPlugin {
 
         $schema[] = array("CreateTableSQL", array(plugin_table("issue"), "
   id 		 I  NOTNULL PRIMARY AUTO,
-  issue_id      C(32) NOTNULL DEFAULT \"\",
-  app_ver_code  C(32) NOTNULL DEFAULT \" '' \",
-  project_id 		 I  NOTNULL DEFAULT '0',
-  report_id     X NOTNULL DEFAULT \" '' \",
-  app_ver_code  C(32) NOTNULL DEFAULT \" '' \",
+  project_id 	  I  NOTNULL DEFAULT '0',
+  issue_id      I NOTNULL DEFAULT '0',
+  report_id     C(36) NOTNULL DEFAULT \" '' \",
+  report_fingerprint    X NOTNULL DEFAULT \" '' \",
   file_path     X NOTNULL DEFAULT \" '' \",
   phone_model   X NOTNULL DEFAULT \" '' \",
   phone_build   X NOTNULL DEFAULT \" '' \",
@@ -79,14 +79,12 @@ class MantisAcraPlugin extends MantisPlugin {
   total_mem_size    I,
   available_mem_size I,
   custom_data   X NOTNULL DEFAULT \" '' \",
-  stack_trace   X NOTNULL DEFAULT \" '' \",
   initial_configuration X NOTNULL DEFAULT \" '' \",
   crash_configuration   X NOTNULL DEFAULT \" '' \",
   display       X NOTNULL DEFAULT \" '' \",
   user_comment  X NOTNULL DEFAULT \" '' \",
   dumpsys_meminfo       X NOTNULL DEFAULT \" '' \",
   dropbox       X NOTNULL DEFAULT \" '' \",
-  logcat        X NOTNULL DEFAULT \" '' \",
   eventslog     X NOTNULL DEFAULT \" '' \",
   radiolog      X NOTNULL DEFAULT \" '' \",
   is_silent     X NOTNULL DEFAULT \" '' \",
@@ -97,8 +95,7 @@ class MantisAcraPlugin extends MantisPlugin {
   environment       X NOTNULL DEFAULT \" '' \",
   settings_system   X NOTNULL DEFAULT \" '' \",
   settings_secure   X NOTNULL DEFAULT \" '' \",
-  shared_preferences    X NOTNULL DEFAULT \" '' \",
-  reports       I NOTNULL DEFAULT '0'
+  shared_preferences    X NOTNULL DEFAULT \" '' \"
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
         return $schema;
@@ -188,50 +185,67 @@ class MantisAcraPlugin extends MantisPlugin {
 
     function save_acra_issue($p_project_id){
         $t_project_id = $p_project_id;
+        $t_project_name = project_get_name($p_project_id);
+        $t_fingerprint = $this->build_acra_issue_id(gpc_get_string( 'STACK_TRACE' ), $t_project_name);
 
-
-
+/*
         if( !access_has_project_level( config_get('report_bug_threshold' ) ) ){
             echo "access_has_project_level ret";
             return;
         }
+*/
+        $t_user_id = $this->get_user_id();
+        global $g_cache_current_user_id;
+        $g_cache_current_user_id = $t_user_id;
 
         $t_bug_data = new BugData;
         $t_bug_data->project_id             = $t_project_id;
-        $t_bug_data->reporter_id            = auth_get_current_user_id();
-        $t_bug_data->build                  = gpc_get_string( 'build', '' );
-        $t_bug_data->platform               = gpc_get_string( 'platform', '' );
-        $t_bug_data->os                     = gpc_get_string( 'os', '' );
-        $t_bug_data->os_build               = gpc_get_string( 'os_build', '' );
-        $t_bug_data->version                = gpc_get_string( 'product_version', '' );
+        $t_bug_data->reporter_id            = $t_user_id;
+        $t_bug_data->build                  = gpc_get_string( 'APP_VERSION_CODE', '' );
+        $t_bug_data->platform               = gpc_get_string( 'ANDROID_VERSION', '' );
+        $t_bug_data->os                     =  "Android";//gpc_get_string( 'os', '' );
+        $t_os_build = gpc_get_string( 'BUILD', '' );
+        if(  preg_match ( '/DISPLAY\s*=\s*(.*)/', $t_os_build, $t_match) ){
+            var_dump($t_match);
+            $t_os_build = $t_match[1];
+        }
+        else{
+            $t_os_build = gpc_get_string( 'ANDROID_VERSION', '' );
+        }
+        $t_bug_data->os_build               = $t_os_build;//gpc_get_string( 'os_build', '' );
+        $t_bug_data->version                = gpc_get_string( 'APP_VERSION_NAME', '' );
         $t_bug_data->profile_id             = gpc_get_int( 'profile_id', 0 );
         $t_bug_data->handler_id             = gpc_get_int( 'handler_id', 0 );
-        $t_bug_data->view_state             = gpc_get_int( 'view_state', config_get( 'default_bug_view_status' ) );
-        $t_bug_data->category_id            = gpc_get_int( 'category_id', 0 );
-        $t_bug_data->reproducibility        = gpc_get_int( 'reproducibility', config_get( 'default_bug_reproducibility' ) );
-        $t_bug_data->severity               = gpc_get_int( 'severity', config_get( 'default_bug_severity' ) );
-        $t_bug_data->priority               = gpc_get_int( 'priority', config_get( 'default_bug_priority' ) );
+        $t_bug_data->view_state             = gpc_get_int( 'view_state', config_get( 'default_bug_view_status', 'VS_PUBLIC', 'acra_reporter' ) );
+        $t_bug_data->category_id            = $this->get_category_id($p_project_id);//gpc_get_int( 'category_id', 0 );
+        $t_bug_data->reproducibility        = 10;//gpc_get_int( 'reproducibility', config_get( 'default_bug_reproducibility' ) );
+        $t_bug_data->severity               = CRASH;//gpc_get_int( 'severity', config_get( 'default_bug_severity' ) );
+        $t_bug_data->priority               = HIGH;//gpc_get_int( 'priority', config_get( 'default_bug_priority' ) );
         $t_bug_data->projection             = gpc_get_int( 'projection', config_get( 'default_bug_projection' ) );
         $t_bug_data->eta                    = gpc_get_int( 'eta', config_get( 'default_bug_eta' ) );
-        $t_bug_data->resolution             = gpc_get_string('resolution', config_get( 'default_bug_resolution' ) );
-        $t_bug_data->status                 = gpc_get_string( 'status', config_get( 'bug_submit_status' ) );
-        $t_bug_data->summary                = trim( gpc_get_string( 'summary' ) );
-        $t_bug_data->description            = gpc_get_string( 'description' );
-        $t_bug_data->steps_to_reproduce     = gpc_get_string( 'steps_to_reproduce', config_get( 'default_bug_steps_to_reproduce' ) );
-        $t_bug_data->additional_information = gpc_get_string( 'additional_info', config_get ( 'default_bug_additional_info' ) );
-        $t_bug_data->due_date               = gpc_get_string( 'due_date', '');
+        $t_bug_data->resolution             = OPEN;//gpc_get_string('resolution', config_get( 'default_bug_resolution' ) );
+        $t_bug_data->status                 = NEW_;//gpc_get_string( 'status', config_get( 'bug_submit_status' ) );
+        $t_bug_data->summary                = "Acra report crash on ".gpc_get_string( 'BRAND' )." ".gpc_get_string( 'PHONE_MODEL' );//trim( gpc_get_string( 'summary' ) );
+        $t_bug_data->description            = gpc_get_string( 'STACK_TRACE' );//gpc_get_string( 'description' );
+        $t_bug_data->steps_to_reproduce     = gpc_get_string( 'LOGCAT', "" );
+        $t_bug_data->additional_information = gpc_get_string( 'CRASH_CONFIGURATION', "" );
+        $t_bug_data->due_date               = gpc_get_string( 'USER_CRASH_DATE', '');
         if ( is_blank ( $t_bug_data->due_date ) ) {
             $t_bug_data->due_date = date_get_null();
+        }
+        if( acra_count_by_fingerprint($t_fingerprint) > 0 ){
+            $t_bug_data->resolution = DUPLICATE;
         }
 
         $f_files                            = gpc_get_file( 'ufile', null ); /** @todo (thraxisp) Note that this always returns a structure */
         $f_report_stay                      = gpc_get_bool( 'report_stay', false );
         $f_copy_notes_from_parent           = gpc_get_bool( 'copy_notes_from_parent', false);
-
+/*
         if ( access_has_project_level( config_get( 'roadmap_update_threshold' ), $t_bug_data->project_id ) ) {
             $t_bug_data->target_version = gpc_get_string( 'target_version', '' );
         }
-
+*/
+/*
         # if a profile was selected then let's use that information
         if ( 0 != $t_bug_data->profile_id ) {
             if ( profile_is_global( $t_bug_data->profile_id ) ) {
@@ -250,6 +264,7 @@ class MantisAcraPlugin extends MantisPlugin {
                 $t_bug_data->os_build = $row['os_build'];
             }
         }
+*/
         helper_call_custom_function( 'issue_create_validate', array( $t_bug_data ) );
 
         # Validate the custom fields before adding the bug.
@@ -275,7 +290,7 @@ class MantisAcraPlugin extends MantisPlugin {
 
         # Ensure that resolved bugs have a handler
         if ( $t_bug_data->handler_id == NO_USER && $t_bug_data->status >= config_get( 'bug_resolved_status_threshold' ) ) {
-            $t_bug_data->handler_id = auth_get_current_user_id();
+            $t_bug_data->handler_id = $this->get_user_id();
         }
 
         # Create the bug
@@ -356,6 +371,43 @@ class MantisAcraPlugin extends MantisPlugin {
         # Allow plugins to post-process bug data with the new bug ID
         event_signal( 'EVENT_REPORT_BUG', array( $t_bug_data, $t_bug_id ) );
 
+        //save extra fro acra
+        $acra_ext = new BugDataAcraExt;
+        $acra_ext->project_id = $t_project_id;
+        $acra_ext->issue_id = $t_bug_id;
+        $acra_ext->report_id = gpc_get_string( 'REPORT_ID', '' );
+        $acra_ext->report_fingerprint = $t_fingerprint;
+        $acra_ext->file_path = gpc_get_string( 'FILE_PATH', '' );
+        $acra_ext->phone_model = gpc_get_string( 'PHONE_MODEL', '' );
+        $acra_ext->phone_build = gpc_get_string( 'BUILD', '' );
+        $acra_ext->phone_brand = gpc_get_string( 'BRAND', '' );
+        $acra_ext->product_name = gpc_get_string( 'PRODUCT', '' );
+        $acra_ext->total_mem_size = gpc_get_string( 'TOTAL_MEM_SIZE', '' );
+        $acra_ext->available_mem_size = gpc_get_string( 'AVAILABLE_MEM_SIZE', '' );
+        $acra_ext->custom_data = gpc_get_string( 'CUSTOM_DATA', '' );
+        $acra_ext->initial_configuration = gpc_get_string( 'INITIAL_CONFIGURATION', '' );
+        $acra_ext->crash_configuration = gpc_get_string( 'CRASH_CONFIGURATION', '' );
+        $acra_ext->display = gpc_get_string( 'DISPLAY', '' );
+        $acra_ext->user_comment = gpc_get_string( 'USER_COMMENT', '' );
+        $acra_ext->dumpsys_meminfo = gpc_get_string( 'DUMPSYS_MEMINFO', '' );
+        $acra_ext->dropbox = gpc_get_string( 'DROPBOX', '' ); //NOT EXITS, need check with acra, later
+        $acra_ext->eventslog = gpc_get_string( 'EVENTSLOG', '' ); //NOT EXITS, need check with acra, later
+        $acra_ext->radiolog = gpc_get_string( 'RADIOLOG', '' ); //NOT EXITS, need check with acra, later
+        $acra_ext->is_silent = gpc_get_string( 'IS_SILENT', '' );
+        $acra_ext->device_id = gpc_get_string( 'INSTALLATION_ID', '' );//NOT EXITS, need check with acra, later
+        $acra_ext->installation_id = gpc_get_string( 'INSTALLATION_ID', '' );
+        $acra_ext->user_email = gpc_get_string( 'USER_EMAIL', '' );
+        $acra_ext->device_features = gpc_get_string( 'DEVICE_FEATURES', '' );
+        $acra_ext->environment = gpc_get_string( 'ENVIRONMENT', '' );
+        $acra_ext->settings_system = gpc_get_string( 'SETTINGS_SYSTEM', '' );
+        $acra_ext->settings_secure = gpc_get_string( 'SETTINGS_SECURE', '' );
+        $acra_ext->shared_preferences = gpc_get_string( 'SHARED_PREFERENCES', '' );
+        $acra_ext->create();
+
+        if( $t_bug_data->resolution == DUPLICATE ){
+            relationship_add($t_bug_id, acra_get_bug_id_by_fingerprint($t_fingerprint), BUG_DUPLICATE);
+        }
+
         email_new_bug( $t_bug_id );
 
         // log status and resolution changes if they differ from the default
@@ -367,23 +419,52 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function build_acra_issue_id($stack_trace, $package)
-{
-    $lines = explode("\n", $stack_trace);
-    //$idx = array_find('Caused by:', $lines);
-    //$v = $lines[$idx];
-    if (array_find(": ", $lines) === false && array_find($package, $lines) === false) {
-        $value = $lines[0];
-    } else {
-        $value = "";
-        foreach ($lines as $id => $line) {
-            if (strpos($line, ": ") !== false || strpos($line, $package) !== false || strpos
-                ($line, "Error") !== false || strpos($line, "Exception") !== false) {
-                $value .= $line . "<br />";
+    {
+        $lines = explode("\n", $stack_trace);
+        //$idx = array_find('Caused by:', $lines);
+        //$v = $lines[$idx];
+        if ($this->array_find(": ", $lines) === false && $this->array_find($package, $lines) === false) {
+            $value = $lines[0];
+        } else {
+            $value = "";
+            foreach ($lines as $id => $line) {
+                if (strpos($line, ": ") !== false || strpos($line, $package) !== false || strpos
+                    ($line, "Error") !== false || strpos($line, "Exception") !== false) {
+                    $value .= $line . "<br />";
+                }
             }
         }
+        echo $value;
+        return md5($value);
     }
-    echo $value;
-    return md5($value);
-}
+
+    function array_find($needle, $haystack)
+    {
+        foreach ($haystack as $k => $v) {
+            if (strstr($v, $needle) !== false) {
+                return $k;
+            }
+        }
+        return false;
+    }
+
+    function get_user_id(){
+        $t_user_id = user_get_id_by_name('acra_reporter');
+        if( $t_user_id === false ){
+            user_create( "acra_reporter", date("YzHis", time()), $p_email = 'acra@mantis.com');
+        }
+        $t_user_id = user_get_id_by_name('acra_reporter');
+        return $t_user_id;
+    }
+
+    function get_category_id($p_project_id){
+        $t_cat_name = 'acra report';
+        $t_cat_id = category_get_id_by_name($t_cat_name, $p_project_id, false);
+        if( $t_cat_id === false ){
+            category_add($p_project_id, $t_cat_name);
+            $t_cat_id = category_get_id_by_name($t_cat_name, $p_project_id);
+        }
+        return $t_cat_id;
+    }
 
 }
