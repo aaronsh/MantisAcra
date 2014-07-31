@@ -41,7 +41,9 @@ class MantisAcraPlugin extends MantisPlugin {
             'EVENT_MANAGE_PROJECT_CREATE_FORM' => 'show_project_acra_option',
             'EVENT_MANAGE_PROJECT_UPDATE' => 'post_project_update',
             'EVENT_MANAGE_PROJECT_CREATE' => 'post_project_update',
-            'EVENT_LAYOUT_BODY_END' => "attach_javascript"
+            'EVENT_LAYOUT_BODY_END' => "attach_javascript",
+            'EVENT_BUG_DELETED' => "delete_bug",
+            'EVENT_DISPLAY_BUG_ID' => 'show_bug_id'
         );
         return $hooks;
     }
@@ -175,9 +177,44 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function attach_javascript(){
+        if( !$this->show_acra_btn() ){
+            return;
+        }
 ?>
         <script>
-            alert("hello");
+            var bugs = jQuery('table tbody td a .bug_id');
+            var ids = [];
+            for(var i=0; i<bugs.length; i++ ){
+                ids.push(bugs[i].innerText);
+            }
+            console.log(ids);
+            jQuery.ajax({
+                type: "post",
+                url: <?php echo json_encode( plugin_page('check') ); ?>,
+                dataType: "text",
+                data:'data='+JSON.stringify(ids),
+                success: function (data) {
+                    try{
+                        data = JSON.parse(data);
+                        for(var i=0; i<data.length; i++){
+                            if( data[i].id == ids[i] ){
+                                jQuery( bugs[i].parentElement.parentElement ).append(data[i].txt);
+                            }
+                        }
+                    } catch( ex ){
+                        console.log(ex);
+                    }
+                    console.log(data);
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+
+            function openAcraBox(acraBtn){
+                console.log(acraBtn);
+                var link = acraBtn.getAttribute('link');
+            }
         </script>
 <?php
     }
@@ -216,7 +253,7 @@ class MantisAcraPlugin extends MantisPlugin {
         $t_bug_data->version                = gpc_get_string( 'APP_VERSION_NAME', '' );
         $t_bug_data->profile_id             = gpc_get_int( 'profile_id', 0 );
         $t_bug_data->handler_id             = gpc_get_int( 'handler_id', 0 );
-        $t_bug_data->view_state             = gpc_get_int( 'view_state', config_get( 'default_bug_view_status', 'VS_PUBLIC', 'acra_reporter' ) );
+        $t_bug_data->view_state             = gpc_get_int( 'view_state', config_get( 'default_bug_view_status', 'VS_PRIVATE', 'acra_reporter' ) );
         $t_bug_data->category_id            = $this->get_category_id($p_project_id);//gpc_get_int( 'category_id', 0 );
         $t_bug_data->reproducibility        = 10;//gpc_get_int( 'reproducibility', config_get( 'default_bug_reproducibility' ) );
         $t_bug_data->severity               = CRASH;//gpc_get_int( 'severity', config_get( 'default_bug_severity' ) );
@@ -467,4 +504,24 @@ class MantisAcraPlugin extends MantisPlugin {
         return $t_cat_id;
     }
 
+    function delete_bug($p_event, $p_bug_id){
+        acra_delete_bug_ext_by_bug_id($p_bug_id);
+    }
+
+    function show_bug_id($p_event, $p_string, $p_bug_id){
+        if( $this->show_acra_btn() ){
+            return '<span class="bug_id">'.$p_string.'</span>';
+        }
+        return $p_string;
+    }
+
+    function show_acra_btn(){
+        if( strpos($_SERVER['REQUEST_URI'], "view_all_bug_page.php") !== false ){
+            return true;
+        }
+        if( strpos($_SERVER['REQUEST_URI'], "my_view_page.php") !== false ){
+            return true;
+        }
+        return false;
+    }
 }

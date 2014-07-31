@@ -141,3 +141,28 @@ function acra_get_bug_id_by_fingerprint($p_fingerprint){
     }
     return $result;
 }
+
+
+function acra_delete_bug_ext_by_bug_id($p_bug_id){
+    $t_acra_issue_table = plugin_table("issue");
+    $query = "DELETE FROM $t_acra_issue_table WHERE issue_id = '".$p_bug_id."'";
+    $result = db_query_bound( $query );
+//    $result = db_fetch_array($result);
+    $result = db_result($result);
+    if( $result === false){
+        return false;
+    }
+    return $result;
+}
+
+
+function acra_check_by_bug_id($p_bug_id){
+    $t_acra_issue_table = plugin_table("issue");
+    $query = "SELECT id FROM $t_acra_issue_table WHERE issue_id = '".$p_bug_id."' ORDER BY `id` ASC LIMIT 0,1";
+    $result = db_query_bound( $query );
+    $result = db_result($result);
+    if( $result === false){
+        return false;
+    }
+    return $result;
+}
