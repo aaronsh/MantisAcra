@@ -177,9 +177,18 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function attach_javascript(){
-        if( !$this->show_acra_btn() ){
+        if( $this->show_acra_befrief_btn() ){
+            $this->show_acra_brief_buttons_plugin();
             return;
         }
+        if( $this->show_acra_detail_buttons_plugin() ){
+            return;
+        }
+?>
+ <?php
+    }
+
+    function show_acra_brief_buttons_plugin(){
 ?>
         <script type="text/javascript" src="<?php echo plugin_file("fancyBox/fancybox.js"); ?>"></script>
         <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>" media="screen" />
@@ -228,19 +237,86 @@ class MantisAcraPlugin extends MantisPlugin {
                     alert(errorThrown);
                 }
             });
-
-            function openAcraBox(acraBtn){
-                console.log(acraBtn);
-                var link = acraBtn.getAttribute('link');
-            }
-
         </script>
         <div id="acra_dialog" style="display:none;">
 
         </div>
- <?php
+<?php
     }
 
+    function show_acra_detail_buttons_plugin(){
+        ?>
+        <script type="text/javascript" src="<?php echo plugin_file("fancyBox/fancybox.js"); ?>"></script>
+        <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>" media="screen" />
+        <style type="text/css">
+            .acra_popup{
+                width:1400px;
+                height:100%;
+                display: none;
+                padding: 0px;
+            }
+            .acra_frame{
+                width:100%;
+                height:100%;
+            }
+            .fancybox{
+                font-weight: normal;
+            }
+        </style>
+
+        <script>
+            var cells = jQuery("td");
+            var reg = new RegExp(/^\s*ID\s*$/);
+            var idCell = null;
+            for(var i=0; i<cells.length; i++){
+                var str = cells[i].innerText;
+                if( reg.test(str) ){
+                    idCell = cells[i];
+                    break;
+                }
+            }
+            if( idCell != null ){
+                var shorts = idCell.parentElement.previousElementSibling.firstElementChild;
+                var id = idCell.parentElement.nextElementSibling.firstElementChild.innerText
+                var ids=[];
+                ids.push(id);
+                jQuery.ajax({
+                    type: "post",
+                    url: <?php echo json_encode( plugin_page('check') ); ?>,
+                    dataType: "text",
+                    data:'data='+JSON.stringify(ids),
+                    success: function (data) {
+                        try{
+                            data = JSON.parse(data);
+
+                            for(var i=0; i<data.length; i++){
+                                if( data[i].id == ids[i] ){
+                                    var matches = data[i].txt.match(/<a[^>]+/);
+                                    if( matches != null ){
+                                        jQuery(shorts).append('<span class="bracket-link">[&nbsp;'+matches[0]+'>View ACRA more info</a>&nbsp;]</span>');
+                                        var frm = data[i].popup;
+                                        frm = frm.replace('brief.php', 'detail.php');
+                                        jQuery('#acra_dialog').append(frm);
+                                    }
+                                }
+                                jQuery('.fancybox').fancybox();
+                            }
+                        } catch( ex ){
+                            console.log(ex);
+                        }
+                        console.log(data);
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        alert(errorThrown);
+                    }
+                });
+            }
+        </script>
+        <div id="acra_dialog" style="display:none;">
+
+        </div>
+    <?php
+    }
 
     function save_acra_issue($p_project_id){
         $t_project_id = $p_project_id;
@@ -531,17 +607,24 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function show_bug_id($p_event, $p_string, $p_bug_id){
-        if( $this->show_acra_btn() ){
+        if( $this->show_acra_befrief_btn() ){
             return '<span class="bug_id">'.$p_string.'</span>';
         }
         return $p_string;
     }
 
-    function show_acra_btn(){
+    function show_acra_befrief_btn(){
         if( strpos($_SERVER['REQUEST_URI'], "view_all_bug_page.php") !== false ){
             return true;
         }
         if( strpos($_SERVER['REQUEST_URI'], "my_view_page.php") !== false ){
+            return true;
+        }
+        return false;
+    }
+
+    function show_acra_detail_btn(){
+        if( strpos($_SERVER['REQUEST_URI'], "view.php") !== false ){
             return true;
         }
         return false;

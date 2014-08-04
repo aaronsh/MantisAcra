@@ -28,6 +28,7 @@ $objs = array();
 $img = plugin_file( 'acra.jpg' );
 $link = plugin_page("brief.php");
 foreach($ids as $id){
+    $id = trim($id);
     $acra_bug_ext = acra_get_bug_ext_by_issue_id($id);
     if( $acra_bug_ext !== false ){
         $objs[] = array("id"=>$id, "txt"=>'&nbsp;<a class="fancybox" href="#acra_'.$id.'" "><img border="0" width="16" height="16" src="'.$img.'" alt="Acra" title="Acra"></a>',

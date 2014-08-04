@@ -130,7 +130,7 @@ header('X-Frame-Options:SAMEORIGIN');
 </div>
 
 <div class="ch-box-container">
-    <h2 id="tabs">Tabs</h2>
+    <h2 id="tabs">More</h2>
 
     <div class="YOUR_SELECTOR_Tabs ch-tabs">
         <ul class="ch-tabs-triggers">
