@@ -181,6 +181,21 @@ class MantisAcraPlugin extends MantisPlugin {
             return;
         }
 ?>
+        <script type="text/javascript" src="<?php echo plugin_file("fancyBox/fancybox.js"); ?>"></script>
+        <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>" media="screen" />
+        <style type="text/css">
+            .acra_popup{
+                width:800px;
+                height:100%;
+                display: none;
+                padding: 0px;
+            }
+            .acra_frame{
+                width:100%;
+                height:100%;
+            }
+        </style>
+
         <script>
             var bugs = jQuery('table tbody td a .bug_id');
             var ids = [];
@@ -196,10 +211,13 @@ class MantisAcraPlugin extends MantisPlugin {
                 success: function (data) {
                     try{
                         data = JSON.parse(data);
+
                         for(var i=0; i<data.length; i++){
                             if( data[i].id == ids[i] ){
                                 jQuery( bugs[i].parentElement.parentElement ).append(data[i].txt);
+                                jQuery('#acra_dialog').append(data[i].popup);
                             }
+                            jQuery('.fancybox').fancybox();
                         }
                     } catch( ex ){
                         console.log(ex);
@@ -215,8 +233,12 @@ class MantisAcraPlugin extends MantisPlugin {
                 console.log(acraBtn);
                 var link = acraBtn.getAttribute('link');
             }
+
         </script>
-<?php
+        <div id="acra_dialog" style="display:none;">
+
+        </div>
+ <?php
     }
 
 

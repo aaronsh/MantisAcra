@@ -26,11 +26,12 @@ $ids = json_decode(gpc_get_string('data'));
 $objs = array();
 
 $img = plugin_file( 'acra.jpg' );
-$link = plugin_page("shortcut");
+$link = plugin_page("brief.php");
 foreach($ids as $id){
-    $t_is_acra_report = acra_check_by_bug_id($id);
-    if( $t_is_acra_report ){
-        $objs[] = array("id"=>$id, "txt"=>'&nbsp;<a id="acra_shortcut" link="plugin.php?page='.$link.'&id='.$id.'" onclick="openAcraBox(this);"><img border="0" width="16" height="16" src="'.$img.'" alt="Acra" title="Acra"></a>');
+    $acra_bug_ext = acra_get_bug_ext_by_issue_id($id);
+    if( $acra_bug_ext !== false ){
+        $objs[] = array("id"=>$id, "txt"=>'&nbsp;<a class="fancybox" href="#acra_'.$id.'" "><img border="0" width="16" height="16" src="'.$img.'" alt="Acra" title="Acra"></a>',
+            "popup"=>'<div class="acra_popup" id="acra_'.$id.'" ><iframe class="acra_frame" src="'.$link."&id=$id&hash=$acra_bug_ext->report_fingerprint".'"  ></iframe></div>');
     }
     else{
         $objs[] = array("id"=>$id, "txt"=>"");
