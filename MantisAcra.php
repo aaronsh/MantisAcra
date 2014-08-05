@@ -34,8 +34,6 @@ class MantisAcraPlugin extends MantisPlugin {
      */
     function hooks( ) {
         $hooks = array(
-            'EVENT_MENU_MANAGE' => 'import_issues_menu',
-            'EVENT_MENU_FILTER' => 'export_issues_menu',
             'EVENT_CORE_READY' => "on_core_ready",
             'EVENT_MANAGE_PROJECT_UPDATE_FORM' => "show_project_acra_option",
             'EVENT_MANAGE_PROJECT_CREATE_FORM' => 'show_project_acra_option',
@@ -48,13 +46,7 @@ class MantisAcraPlugin extends MantisPlugin {
         return $hooks;
     }
 
-    function import_issues_menu( ) {
-        return array( '<a href="' . plugin_page( 'title' ) . '">' . plugin_lang_get( 'title' ) . '</a>', );
-    }
 
-    function export_issues_menu( ) {
-        return array( '<a href="' . plugin_page( 'title' ) . '">' . plugin_lang_get( 'title' ) . '</a>', );
-    }
 
     function schema()
     {
@@ -109,7 +101,6 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function on_core_ready(){
-        error_log("on_core_ready:".json_encode($_REQUEST));
         if( isset($_GET['acra']) && $_GET['acra'] == 'true' ){
             $pkg = gpc_get_string('PACKAGE_NAME');
 
@@ -130,12 +121,16 @@ class MantisAcraPlugin extends MantisPlugin {
     function show_project_acra_option($p_param1, $p_param2){
 
         if( isset($p_param2) ){
-        $t_acra_prj_table = plugin_table("project");
+            $t_acra_prj_table = plugin_table("project");
 
-        $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$p_param2 ;
-        $result = db_query_bound( $query );
-        error_log("show_project_acra_option ".json_encode(db_fetch_array($result)));
-        //$num_files = db_num_rows( $result );
+            $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$p_param2 ;
+            $result = db_query_bound( $query );
+            $result = db_fetch_array($result);
+
+            $t_package_name = "";
+            if( $result !== false && is_array($result) ){
+                $t_package_name = $result['package_name'];
+            }
          }
 ?>
 <tr <?php echo helper_alternate_class() ?>>
@@ -143,9 +138,8 @@ class MantisAcraPlugin extends MantisPlugin {
     Acra Option
 </td>
 <td>
-<?php echo json_encode($p_param1).";".json_encode($p_param2); ?>
-    <input type="checkbox" name="acra_project" checked="checked">
-    <input type="text" name="acra_package" size="60" maxlength="128" value="com.benemind.voa">
+    <span><input type="checkbox" name="acra_project" <?php if( strlen($t_package_name) > 0 ){ echo 'checked="checked"'; } ?> >Is Acra Project</span>&nbsp;
+    <span style="padding-left: 30px;">Package:<input type="text" name="acra_package" size="60" maxlength="128" value="<?php echo $t_package_name; ?>"></span>
 </td>
 </tr>
 <?php
@@ -158,22 +152,25 @@ class MantisAcraPlugin extends MantisPlugin {
 
         $t_acra_prj_table = plugin_table("project");
         if( $t_acra_prj ){
+            if(strlen($t_package) > 0 ){
+                $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$p_param2 ;
+                $result = db_query_bound( $query );
+                if( db_num_rows( $result ) > 0 ){
+                    $t_query = "UPDATE $t_acra_prj_table SET `package_name` = '$t_package' WHERE `project_id` = $p_param2;";
 
-            $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$p_param2 ;
-            $result = db_query_bound( $query );
-            if( db_num_rows( $result ) > 0 ){
-                $t_query = "UPDATE $t_acra_prj_table SET `package_name` = '$t_package' WHERE `project_id` = $p_param2;";
-
+                }
+                else{
+                    $t_query = "INSERT INTO $t_acra_prj_table ( package_name, project_id) VALUES ('$t_package', $p_param2 )";
+                }
             }
             else{
-                $t_query = "INSERT INTO $t_acra_prj_table ( package_name, project_id) VALUES ('$t_package', $p_param2 )";
+                return;
             }
         }
         else{
             $t_query = "DELETE FROM $t_acra_prj_table WHERE `project_id` = $p_param2";
         }
         db_query_bound($t_query);
-
     }
 
     function attach_javascript(){

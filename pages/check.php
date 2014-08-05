@@ -25,13 +25,13 @@ auth_reauthenticate( );
 $ids = json_decode(gpc_get_string('data'));
 $objs = array();
 
-$img = plugin_file( 'acra.jpg' );
+$img = plugin_file( 'acra_logo.png' );
 $link = plugin_page("brief.php");
 foreach($ids as $id){
     $id = trim($id);
     $acra_bug_ext = acra_get_bug_ext_by_issue_id($id);
     if( $acra_bug_ext !== false ){
-        $objs[] = array("id"=>$id, "txt"=>'&nbsp;<a class="fancybox" href="#acra_'.$id.'" "><img border="0" width="16" height="16" src="'.$img.'" alt="Acra" title="Acra"></a>',
+        $objs[] = array("id"=>$id, "txt"=>'&nbsp;<a class="fancybox" href="#acra_'.$id.'" "><img border="0" width="18" height="16" src="'.$img.'" alt="Acra" title="Acra"></a>',
             "popup"=>'<div class="acra_popup" id="acra_'.$id.'" ><iframe class="acra_frame" src="'.$link."&id=$id&hash=$acra_bug_ext->report_fingerprint".'"  ></iframe></div>');
     }
     else{
