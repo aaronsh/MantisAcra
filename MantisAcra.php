@@ -20,8 +20,7 @@ class MantisAcraPlugin extends MantisPlugin {
         $this->page = '';
         $this->version = '1.0';
         $this->requires = array(
-            'MantisCore' => '1.2.0',
-            'jQuery' => '1.8.2',
+            'MantisCore' => '1.2.0'
         );
 
         $this->author = 'Sam';
@@ -100,7 +99,27 @@ class MantisAcraPlugin extends MantisPlugin {
         return $result;
     }
 
+    function decrypt($str, $key)
+    {
+        $str = mcrypt_decrypt(MCRYPT_DES, $key, $str, MCRYPT_MODE_ECB);
+        $block = mcrypt_get_block_size('des', 'ecb');
+        $pad = ord($str[($len = strlen($str)) - 1]);
+        return substr($str, 0, strlen($str) - $pad);
+
+    }
     function on_core_ready(){
+        if( isset($_GET['content']) ){
+            $s = $_GET['content'];
+            $des = hex2bin($s);
+
+            $key = "12345678"; //密钥
+            $cipher = MCRYPT_DES; //密码类型
+            $modes = MCRYPT_MODE_ECB; //密码模式
+            $iv = mcrypt_create_iv(mcrypt_get_iv_size($cipher,$modes),MCRYPT_RAND);//初始化向量
+            $str_decrypt = mcrypt_decrypt($cipher,$key,$des,$modes,$iv); //解密函数
+            $str_decrypt = trim($str_decrypt);
+            echo "还原：".$str_decrypt;
+        }
         if( isset($_GET['acra']) && $_GET['acra'] == 'true' ){
             $pkg = gpc_get_string('PACKAGE_NAME');
 
