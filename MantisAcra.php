@@ -119,6 +119,49 @@ class MantisAcraPlugin extends MantisPlugin {
             $str_decrypt = mcrypt_decrypt($cipher,$key,$des,$modes,$iv); //解密函数
             $str_decrypt = trim($str_decrypt);
             echo "还原：".$str_decrypt;
+            
+            
+            $data = "{\"packageName\":\"cn.emoney.pf\",\"HARDWARE\":\"mt6572\",\"timeStamp\":1358528992920,\"RADIO\":\"unknown\",\"versionCode\":\"2\",\"stackTrace\":\"java.lang.NullPointerException\\n\\tat cn.emoney.frag.sub.FragSubStockChooseAdvance.initBlock(FragSubStockChooseAdvance.java:86)\\n\\tat cn.emoney.frag.FragStockChoose.initAdvanceChooser(FragStockChoose.java:191)\\n\\tat cn.emoney.frag.FragStockChoose.initBlock(FragStockChoose.java:112)\\n\\tat cn.emoney.frag.FragBase.onCreateView(FragBase.java:255)\\n\\tat android.support.v4.app.Fragment.performCreateView(Fragment.java:1504)\\n\\tat android.support.v4.app.FragmentManagerImpl.moveToState(FragmentManager.java:942)\\n\\tat android.support.v4.app.FragmentManagerImpl.moveToState(FragmentManager.java:1121)\\n\\tat android.support.v4.app.BackStackRecord.run(BackStackRecord.java:682)\\n\\tat android.support.v4.app.FragmentManagerImpl.execPendingActions(FragmentManager.java:1484)\\n\\tat android.support.v4.app.FragmentManagerImpl$1.run(FragmentManager.java:450)\\n\\tat android.os.Handler.handleCallback(Handler.java:800)\\n\\tat android.os.Handler.dispatchMessage(Handler.java:100)\\n\\tat android.os.Looper.loop(Looper.java:194)\\n\\tat android.app.ActivityThread.main(ActivityThread.java:5391)\\n\\tat java.lang.reflect.Method.invokeNative(Native Method)\\n\\tat java.lang.reflect.Method.invoke(Method.java:525)\\n\\tat com.android.internal.os.ZygoteInit$MethodAndArgsCaller.run(ZygoteInit.java:833)\\n\\tat com.android.internal.os.ZygoteInit.main(ZygoteInit.java:600)\\n\\tat dalvik.system.NativeStart.main(Native Method)\\n\",\"HOST\":\"wingtech-desktop\",\"TAGS\":\"test-keys\",\"ID\":\"JDQ39\",\"MANUFACTURER\":\"T-smart\",\"appBuildDate\":\"20141122\",\"TYPE\":\"user\",\"CUSTOMER\":\"WINGTECH\",\"TIME\":\"1393846956000\",\"FINGERPRINT\":\"T-smart\\/wt97512\\/wt97512:4.2.2\\/JDQ39\\/1393846845:user\\/test-keys\",\"UNKNOWN\":\"unknown\",\"BOARD\":\"wt97512\",\"HARDWARE_VERSION\":\"P1\",\"versionName\":\"1.0.0\",\"PRODUCT\":\"wt97512\",\"DISPLAY\":\"4.2.004.P1.D28X.TSMART\",\"USER\":\"liumin3\",\"DEVICE\":\"wt97512\",\"BOOTLOADER\":\"unknown\",\"MODEL\":\"T-smart D28X\",\"CPU_ABI\":\"armeabi-v7a\",\"CPU_ABI2\":\"armeabi\",\"IS_DEBUGGABLE\":\"false\",\"VERSION_INNER_NUMBER\":\"SW_S97512D1_V013_M10_D28X_TSMART_EMMC_MP\",\"SERIAL\":\"0123456789ABCDEF\",\"BRAND\":\"T-smart\"}";
+$data =json_decode ( $data , true );
+var_dump($data);
+if( $data != null ){
+    echo "done";
+
+		$_GET['STACK_TRACE' )]= $data['stackTrace'];
+		$_GET['APP_VERSION_CODE']= $data['appVersionCode'];
+		$_GET['ANDROID_VERSION']="";
+		$_GET['BUILD']=$data['appBuildDate'];
+		$_GET['ANDROID_VERSION']=
+		$_GET['APP_VERSION_NAME']= $data['appVersionName'];
+		$_GET['LOGCAT']= "";
+		$_GET['CRASH_CONFIGURATION']= "";
+		$_GET['USER_CRASH_DATE']= $data['timeStamp'];
+		$_GET['REPORT_ID']="";
+		$_GET['FILE_PATH']="";
+		$_GET['PHONE_MODEL']= $data['MODEL'];
+		$_GET['BUILD'] = "";
+		$_GET['BRAND']= $data['BRAND'];
+		$_GET['PRODUCT']= $data['PRODUCT'];
+		$_GET['TOTAL_MEM_SIZE']= "";
+		$_GET['AVAILABLE_MEM_SIZE']= "";
+		$_GET['CUSTOM_DATA']= "";
+		$_GET['INITIAL_CONFIGURATION']= "";
+		$_GET['DISPLAY']= $data['DISPLAY'];
+		$_GET['USER_COMMENT']= "";
+		$_GET['DUMPSYS_MEMINFO']= "";
+		$_GET['DROPBOX']= "";
+		$_GET['EVENTSLOG']= "";
+		$_GET['RADIOLOG']= "";
+		$_GET['IS_SILENT']= "";
+		$_GET['INSTALLATION_ID']="";
+		$_GET['USER_EMAIL']="";
+		$_GET['DEVICE_FEATURES']="";
+		$_GET['ENVIRONMENT']="";
+		$_GET['SETTINGS_SYSTEM']="";
+		$_GET['SETTINGS_SECURE']="";
+		$_GET['SHARED_PREFERENCES']= "";
+
+}
         }
         if( isset($_GET['acra']) && $_GET['acra'] == 'true' ){
             $pkg = gpc_get_string('PACKAGE_NAME');
