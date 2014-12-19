@@ -20,8 +20,7 @@ header('X-Frame-Options:SAMEORIGIN');
 
     </style>
 
-    <link rel="stylesheet" href="http://localhost/chico/dist/ui/chico.css">
-    <link rel="stylesheet" href="http://localhost/chico/vendor/mesh.min.css">
+    <link rel="stylesheet" href="<?php echo plugin_file('chico.css');?>">
     <style>
         /**
          * Carousel demo

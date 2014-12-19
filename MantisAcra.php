@@ -20,7 +20,8 @@ class MantisAcraPlugin extends MantisPlugin {
         $this->page = '';
         $this->version = '1.0';
         $this->requires = array(
-            'MantisCore' => '1.2.0'
+            'MantisCore' => '1.2.0',
+            'jQuery' => '1.8.2'
         );
 
         $this->author = 'Sam';
@@ -257,7 +258,7 @@ class MantisAcraPlugin extends MantisPlugin {
         <style type="text/css">
             .acra_popup{
                 width:800px;
-                height:100%;
+                height:400px;
                 display: none;
                 padding: 0px;
             }
@@ -312,8 +313,8 @@ class MantisAcraPlugin extends MantisPlugin {
         <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>" media="screen" />
         <style type="text/css">
             .acra_popup{
-                width:1400px;
-                height:100%;
+                width:1200px;
+                height:400px;
                 display: none;
                 padding: 0px;
             }
