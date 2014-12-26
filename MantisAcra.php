@@ -21,7 +21,7 @@ class MantisAcraPlugin extends MantisPlugin {
         $this->version = '1.0';
         $this->requires = array(
             'MantisCore' => '1.2.0',
-            'jQuery' => '1.8.2',
+            'jQuery' => '1.8.2'
         );
 
         $this->author = 'Sam';
@@ -100,7 +100,58 @@ class MantisAcraPlugin extends MantisPlugin {
         return $result;
     }
 
+    function decrypt($str, $key)
+    {
+        $str = mcrypt_decrypt(MCRYPT_DES, $key, $str, MCRYPT_MODE_ECB);
+        $block = mcrypt_get_block_size('des', 'ecb');
+        $pad = ord($str[($len = strlen($str)) - 1]);
+        return substr($str, 0, strlen($str) - $pad);
+
+    }
     function on_core_ready(){
+        if( isset($_SESSION["acra_ext"]) && $_SESSION["acra_ext"] && isset($_GET['acra_page']) ){
+        
+            switch($_GET['acra_page']){
+                case 'check.php':
+                    require("pages/check.php");
+                    break;
+                case 'brief.php':
+                    require("pages/brief.php");
+                    break;
+                case 'detail.php':
+                    require("pages/detail.php");
+                    break;
+            }
+            exit;
+        }
+        if( isset($_POST['data']) ){
+            $data = $_POST['data'];
+            $ts = substr($data, 0, 16);
+            $data = substr($data, 16);
+            $data = trim($data);
+            $key = md5($ts);
+            $key = substr($key, 0, 8);
+
+            $des = hex2bin($data);
+
+            $cipher = MCRYPT_DES; //密码类型
+            $modes = MCRYPT_MODE_ECB; //密码模式
+            $iv = mcrypt_create_iv(mcrypt_get_iv_size($cipher, $modes), MCRYPT_RAND);//初始化向量
+            $str_decrypt = mcrypt_decrypt($cipher, $key, $des, $modes, $iv); //解密函数
+            $str_decrypt = trim($str_decrypt);
+            //echo $str_decrypt;
+
+            $data = json_decode($str_decrypt, true);
+            //var_dump($data);
+            if ($data != null) {
+                $_GET['acra'] = true;
+                $keys = array_keys($data);
+                foreach( $keys as $key ) {
+                	$_GET[$key] = $data[$key];
+                }
+            }
+            //var_dump($_GET);
+        }
         if( isset($_GET['acra']) && $_GET['acra'] == 'true' ){
             $pkg = gpc_get_string('PACKAGE_NAME');
 
@@ -174,6 +225,7 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function attach_javascript(){
+        $_SESSION["acra_ext"] = true;
         if( $this->show_acra_befrief_btn() ){
             $this->show_acra_brief_buttons_plugin();
             return;
@@ -192,7 +244,7 @@ class MantisAcraPlugin extends MantisPlugin {
         <style type="text/css">
             .acra_popup{
                 width:800px;
-                height:100%;
+                height:400px;
                 display: none;
                 padding: 0px;
             }
@@ -211,7 +263,7 @@ class MantisAcraPlugin extends MantisPlugin {
             console.log(ids);
             jQuery.ajax({
                 type: "post",
-                url: <?php echo json_encode( plugin_page('check') ); ?>,
+                url: "index.php?acra_page=check.php",
                 dataType: "text",
                 data:'data='+JSON.stringify(ids),
                 success: function (data) {
@@ -247,8 +299,8 @@ class MantisAcraPlugin extends MantisPlugin {
         <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>" media="screen" />
         <style type="text/css">
             .acra_popup{
-                width:1400px;
-                height:100%;
+                width:1200px;
+                height:400px;
                 display: none;
                 padding: 0px;
             }
@@ -279,7 +331,7 @@ class MantisAcraPlugin extends MantisPlugin {
                 ids.push(id);
                 jQuery.ajax({
                     type: "post",
-                    url: <?php echo json_encode( plugin_page('check') ); ?>,
+                    url: "index.php?acra_page=check.php",
                     dataType: "text",
                     data:'data='+JSON.stringify(ids),
                     success: function (data) {
@@ -432,10 +484,14 @@ class MantisAcraPlugin extends MantisPlugin {
         last_visited_issue( $t_bug_id );
 
         # Handle the file upload
-        $t_files = helper_array_transpose( $f_files );
-        foreach( $t_files as $t_file ) {
-            if( !empty( $t_file['name'] ) ) {
-                file_add( $t_bug_id, $t_file, 'bug' );
+        if( $f_files != null ) {
+            $t_files = helper_array_transpose($f_files);
+            if( $t_files != null ) {
+                foreach ($t_files as $t_file) {
+                    if (!empty($t_file['name'])) {
+                        file_add($t_bug_id, $t_file, 'bug');
+                    }
+                }
             }
         }
 

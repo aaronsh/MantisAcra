@@ -17,7 +17,6 @@
 $t_plugin_path = config_get( 'plugin_path' );
 require_once( $t_plugin_path . 'MantisAcra' . DIRECTORY_SEPARATOR . 'BugDataAcraExt.php' );
 
-auth_reauthenticate( );
 
 //echo $t_ids = gpc_get_string('data');
 //echo $t_ids;
@@ -26,7 +25,7 @@ $ids = json_decode(gpc_get_string('data'));
 $objs = array();
 
 $img = plugin_file( 'acra_logo.png' );
-$link = plugin_page("brief.php");
+$link = "index.php?acra_page=brief.php";//plugin_page("brief.php");
 foreach($ids as $id){
     $id = trim($id);
     $acra_bug_ext = acra_get_bug_ext_by_issue_id($id);
