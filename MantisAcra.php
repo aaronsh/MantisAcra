@@ -57,6 +57,11 @@ class MantisAcraPlugin extends MantisPlugin {
   package_name      C(128) NOTNULL DEFAULT \" '' \"
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
+        $schema[] = array("CreateTableSQL", array(plugin_table("version"), "
+  id 		 I  NOTNULL PRIMARY AUTO,
+  version_id 		 I  NOTNULL DEFAULT '0',
+  map      C(128) NOTNULL DEFAULT \" '' \"
+",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
 
         $schema[] = array("CreateTableSQL", array(plugin_table("issue"), "
@@ -89,7 +94,8 @@ class MantisAcraPlugin extends MantisPlugin {
   environment       X NOTNULL DEFAULT \" '' \",
   settings_system   X NOTNULL DEFAULT \" '' \",
   settings_secure   X NOTNULL DEFAULT \" '' \",
-  shared_preferences    X NOTNULL DEFAULT \" '' \"
+  shared_preferences    X NOTNULL DEFAULT \" '' \",
+  clear_statcktrace    X NOTNULL DEFAULT \" '' \"
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
         return $schema;
