@@ -57,13 +57,6 @@ class MantisAcraPlugin extends MantisPlugin {
   package_name      C(128) NOTNULL DEFAULT \" '' \"
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
-        $schema[] = array("CreateTableSQL", array(plugin_table("version"), "
-  id 		 I  NOTNULL PRIMARY AUTO,
-  version_id 		 I  NOTNULL DEFAULT '0',
-  map      C(128) NOTNULL DEFAULT \" '' \"
-",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
-
-
         $schema[] = array("CreateTableSQL", array(plugin_table("issue"), "
   id 		 I  NOTNULL PRIMARY AUTO,
   project_id 	  I  NOTNULL DEFAULT '0',
@@ -157,6 +150,10 @@ class MantisAcraPlugin extends MantisPlugin {
                 }
             }
             //var_dump($_GET);
+
+            //test codes
+            require( 'ProfileAcraExt.php' );
+            profile_create_unique( ALL_USERS, "Android", "4.0", "coolpad f1", "nothing" );
         }
         if( isset($_GET['acra']) && $_GET['acra'] == 'true' ){
             $pkg = gpc_get_string('PACKAGE_NAME');
