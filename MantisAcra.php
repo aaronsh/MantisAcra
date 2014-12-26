@@ -57,6 +57,11 @@ class MantisAcraPlugin extends MantisPlugin {
   package_name      C(128) NOTNULL DEFAULT \" '' \"
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
+        $schema[] = array("CreateTableSQL", array(plugin_table("version"), "
+  id 		 I  NOTNULL PRIMARY AUTO,
+  version_id 		 I  NOTNULL DEFAULT '0',
+  map      C(128) NOTNULL DEFAULT \" '' \"
+",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
 
         $schema[] = array("CreateTableSQL", array(plugin_table("issue"), "
@@ -89,7 +94,8 @@ class MantisAcraPlugin extends MantisPlugin {
   environment       X NOTNULL DEFAULT \" '' \",
   settings_system   X NOTNULL DEFAULT \" '' \",
   settings_secure   X NOTNULL DEFAULT \" '' \",
-  shared_preferences    X NOTNULL DEFAULT \" '' \"
+  shared_preferences    X NOTNULL DEFAULT \" '' \",
+  clear_statcktrace    X NOTNULL DEFAULT \" '' \"
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
         return $schema;
@@ -109,8 +115,23 @@ class MantisAcraPlugin extends MantisPlugin {
 
     }
     function on_core_ready(){
-        if( isset($_GET['data']) ){
-            $data = $_GET['data'];
+        if( isset($_SESSION["acra_ext"]) && $_SESSION["acra_ext"] && isset($_GET['acra_page']) ){
+        
+            switch($_GET['acra_page']){
+                case 'check.php':
+                    require("pages/check.php");
+                    break;
+                case 'brief.php':
+                    require("pages/brief.php");
+                    break;
+                case 'detail.php':
+                    require("pages/detail.php");
+                    break;
+            }
+            exit;
+        }
+        if( isset($_POST['data']) ){
+            $data = $_POST['data'];
             $ts = substr($data, 0, 16);
             $data = substr($data, 16);
             $data = trim($data);
@@ -124,48 +145,18 @@ class MantisAcraPlugin extends MantisPlugin {
             $iv = mcrypt_create_iv(mcrypt_get_iv_size($cipher, $modes), MCRYPT_RAND);//初始化向量
             $str_decrypt = mcrypt_decrypt($cipher, $key, $des, $modes, $iv); //解密函数
             $str_decrypt = trim($str_decrypt);
-            echo $str_decrypt;
+            //echo $str_decrypt;
 
             $data = json_decode($str_decrypt, true);
-            var_dump($data);
+            //var_dump($data);
             if ($data != null) {
                 $_GET['acra'] = true;
-                $_GET['PACKAGE_NAME'] = $data['packageName'];
-                $_GET['STACK_TRACE'] = $data['stackTrace'];
-                $_GET['APP_VERSION_CODE'] = $data['appVersionCode'];
-                $_GET['ANDROID_VERSION'] = "";
-                $_GET['BUILD'] = $data['appBuildDate'];
-                $_GET['ANDROID_VERSION'] = "";
-                $_GET['APP_VERSION_NAME'] = $data['appVersionName'];
-                $_GET['LOGCAT'] = "";
-                $_GET['CRASH_CONFIGURATION'] = "";
-                $_GET['USER_CRASH_DATE'] = $data['timeStamp'];
-                $_GET['REPORT_ID'] = "";
-                $_GET['FILE_PATH'] = "";
-                $_GET['PHONE_MODEL'] = $data['MODEL'];
-                $_GET['BUILD'] = "";
-                $_GET['BRAND'] = $data['BRAND'];
-                $_GET['PRODUCT'] = $data['PRODUCT'];
-                $_GET['TOTAL_MEM_SIZE'] = "";
-                $_GET['AVAILABLE_MEM_SIZE'] = "";
-                $_GET['CUSTOM_DATA'] = "";
-                $_GET['INITIAL_CONFIGURATION'] = "";
-                $_GET['DISPLAY'] = $data['DISPLAY'];
-                $_GET['USER_COMMENT'] = "";
-                $_GET['DUMPSYS_MEMINFO'] = "";
-                $_GET['DROPBOX'] = "";
-                $_GET['EVENTSLOG'] = "";
-                $_GET['RADIOLOG'] = "";
-                $_GET['IS_SILENT'] = "";
-                $_GET['INSTALLATION_ID'] = "";
-                $_GET['USER_EMAIL'] = "";
-                $_GET['DEVICE_FEATURES'] = "";
-                $_GET['ENVIRONMENT'] = "";
-                $_GET['SETTINGS_SYSTEM'] = "";
-                $_GET['SETTINGS_SECURE'] = "";
-                $_GET['SHARED_PREFERENCES'] = "";
-
+                $keys = array_keys($data);
+                foreach( $keys as $key ) {
+                	$_GET[$key] = $data[$key];
+                }
             }
+            //var_dump($_GET);
         }
         if( isset($_GET['acra']) && $_GET['acra'] == 'true' ){
             $pkg = gpc_get_string('PACKAGE_NAME');
@@ -240,6 +231,7 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function attach_javascript(){
+        $_SESSION["acra_ext"] = true;
         if( $this->show_acra_befrief_btn() ){
             $this->show_acra_brief_buttons_plugin();
             return;
@@ -277,7 +269,7 @@ class MantisAcraPlugin extends MantisPlugin {
             console.log(ids);
             jQuery.ajax({
                 type: "post",
-                url: <?php echo json_encode( plugin_page('check') ); ?>,
+                url: "index.php?acra_page=check.php",
                 dataType: "text",
                 data:'data='+JSON.stringify(ids),
                 success: function (data) {
@@ -345,7 +337,7 @@ class MantisAcraPlugin extends MantisPlugin {
                 ids.push(id);
                 jQuery.ajax({
                     type: "post",
-                    url: <?php echo json_encode( plugin_page('check') ); ?>,
+                    url: "index.php?acra_page=check.php",
                     dataType: "text",
                     data:'data='+JSON.stringify(ids),
                     success: function (data) {
