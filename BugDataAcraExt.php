@@ -156,7 +156,7 @@ function acra_delete_bug_ext_by_bug_id($p_bug_id){
 }
 
 
-function acra_check_by_bug_id($p_bug_id){
+function acra_get_bug_ext_by_bug_id($p_bug_id){
     $t_acra_issue_table = plugin_table("issue");
     $query = "SELECT id FROM $t_acra_issue_table WHERE issue_id = '".$p_bug_id."' ORDER BY `id` ASC LIMIT 0,1";
     $result = db_query_bound( $query );

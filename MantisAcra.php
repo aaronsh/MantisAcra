@@ -40,6 +40,7 @@ class MantisAcraPlugin extends MantisPlugin {
             'EVENT_MANAGE_PROJECT_UPDATE' => 'post_project_update',
             'EVENT_MANAGE_PROJECT_CREATE' => 'post_project_update',
             'EVENT_LAYOUT_BODY_END' => "attach_javascript",
+            'EVENT_UPDATE_BUG' => 'update_bug',
             'EVENT_BUG_DELETED' => "delete_bug",
             'EVENT_DISPLAY_BUG_ID' => 'show_bug_id'
         );
@@ -674,6 +675,21 @@ class MantisAcraPlugin extends MantisPlugin {
 
     function delete_bug($p_event, $p_bug_id){
         acra_delete_bug_ext_by_bug_id($p_bug_id);
+    }
+
+    function update_bug($p_event, $p_bug_data, $p_bug_id){
+        var_dump($p_event);
+        var_dump($p_bug_data);
+        var_dump($p_bug_id);
+        error_log(json_encode($p_event));
+        error_log(json_encode($p_bug_data));
+        error_log(json_encode($p_bug_id));
+        $t_bug_data = bug_get($p_bug_id);
+        error_log("old bug status:".$t_bug_data->status);
+        error_log("old bug resolution:".$t_bug_data->resolution);
+
+        error_log("new bug status:".$p_bug_data->status);
+        error_log("new bug resolution:".$p_bug_data->resolution);
     }
 
     function show_bug_id($p_event, $p_string, $p_bug_id){
