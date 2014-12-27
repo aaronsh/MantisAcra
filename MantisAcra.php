@@ -423,8 +423,12 @@ class MantisAcraPlugin extends MantisPlugin {
         if ( is_blank ( $t_bug_data->due_date ) ) {
             $t_bug_data->due_date = date_get_null();
         }
-        if( acra_count_by_fingerprint($t_fingerprint) > 0 ){
+        $t_bug_with_same_fingerprint = acra_get_bug_id_by_fingerprint($t_fingerprint);
+        if( $t_bug_with_same_fingerprint !== false ){
             $t_bug_data->resolution = DUPLICATE;
+            $t_bug_with_same_fingerprint = bug_get($t_bug_with_same_fingerprint);
+            $t_bug_data->resolution             = $t_bug_with_same_fingerprint->resolution;
+            $t_bug_data->status                 = $t_bug_with_same_fingerprint->status;
         }
 
         $f_files                            = gpc_get_file( 'ufile', null ); /** @todo (thraxisp) Note that this always returns a structure */
