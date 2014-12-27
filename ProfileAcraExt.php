@@ -19,18 +19,17 @@ function profile_exists( $p_platform, $p_os, $p_os_build ) {
 				  ORDER BY platform, os, os_build";
     $result = db_query_bound( $query,  Array( $p_platform, $p_os, $p_os_build ) );
 
-    $t_rows = array();
-    $t_row_count = db_num_rows( $result );
-
-    if( $t_row_count > 0 ){
-        return true;
+    $result = db_fetch_array($result);
+    if( $result === false){
+        return false;
     }
-
-    return false;
+    return $result['id'];
 }
 
 function profile_create_unique( $p_user_id, $p_platform, $p_os, $p_os_build, $p_description ) {
-    if( profile_exists($p_platform, $p_os, $p_os_build) === false ){
-        profile_create($p_user_id, $p_platform, $p_os, $p_os_build, $p_description);
+    $t_profile_id = profile_exists($p_platform, $p_os, $p_os_build);
+    if( $t_profile_id === false ){
+        $t_profile_id = profile_create($p_user_id, $p_platform, $p_os, $p_os_build, $p_description);
     }
+    return $t_profile_id;
 }

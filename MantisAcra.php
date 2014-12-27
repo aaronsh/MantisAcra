@@ -18,7 +18,7 @@ class MantisAcraPlugin extends MantisPlugin {
         $this->name = plugin_lang_get( 'title' );
         $this->description = plugin_lang_get( 'description' );
         $this->page = '';
-        $this->version = '1.0';
+        $this->version = '2.0';
         $this->requires = array(
             'MantisCore' => '1.2.0',
             'jQuery' => '1.8.2'
@@ -57,6 +57,12 @@ class MantisAcraPlugin extends MantisPlugin {
   package_name      C(128) NOTNULL DEFAULT \" '' \"
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
+        $schema[] = array("CreateTableSQL", array(plugin_table("version"), "
+  id 		 I  NOTNULL PRIMARY AUTO,
+  version_id 		 I  NOTNULL DEFAULT '0',
+  map_file      C(128) NOTNULL DEFAULT \" '' \"
+",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
+
         $schema[] = array("CreateTableSQL", array(plugin_table("issue"), "
   id 		 I  NOTNULL PRIMARY AUTO,
   project_id 	  I  NOTNULL DEFAULT '0',
@@ -87,8 +93,7 @@ class MantisAcraPlugin extends MantisPlugin {
   environment       X NOTNULL DEFAULT \" '' \",
   settings_system   X NOTNULL DEFAULT \" '' \",
   settings_secure   X NOTNULL DEFAULT \" '' \",
-  shared_preferences    X NOTNULL DEFAULT \" '' \",
-  clear_statcktrace    X NOTNULL DEFAULT \" '' \"
+  shared_preferences    X NOTNULL DEFAULT \" '' \"
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
         return $schema;
@@ -150,10 +155,6 @@ class MantisAcraPlugin extends MantisPlugin {
                 }
             }
             //var_dump($_GET);
-
-            //test codes
-            require( 'ProfileAcraExt.php' );
-            profile_create_unique( ALL_USERS, "Android", "4.0", "coolpad f1", "nothing" );
         }
         if( isset($_GET['acra']) && $_GET['acra'] == 'true' ){
             $pkg = gpc_get_string('PACKAGE_NAME');
@@ -371,6 +372,8 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function save_acra_issue($p_project_id){
+        require( 'ProfileAcraExt.php' );
+
         $t_project_id = $p_project_id;
         $t_project_name = project_get_name($p_project_id);
         $t_fingerprint = $this->build_acra_issue_id(gpc_get_string( 'STACK_TRACE' ), $t_project_name);
@@ -389,8 +392,8 @@ class MantisAcraPlugin extends MantisPlugin {
         $t_bug_data->project_id             = $t_project_id;
         $t_bug_data->reporter_id            = $t_user_id;
         $t_bug_data->build                  = gpc_get_string( 'APP_VERSION_CODE', '' );
-        $t_bug_data->platform               = gpc_get_string( 'ANDROID_VERSION', '' );
-        $t_bug_data->os                     =  "Android";//gpc_get_string( 'os', '' );
+        $t_bug_data->platform               = "Android";
+        $t_bug_data->os                     =  gpc_get_string( 'ANDROID_VERSION', '' );//gpc_get_string( 'os', '' );
         $t_os_build = gpc_get_string( 'BUILD', '' );
         if(  preg_match ( '/DISPLAY\s*=\s*(.*)/', $t_os_build, $t_match) ){
             var_dump($t_match);
@@ -401,7 +404,7 @@ class MantisAcraPlugin extends MantisPlugin {
         }
         $t_bug_data->os_build               = $t_os_build;//gpc_get_string( 'os_build', '' );
         $t_bug_data->version                = gpc_get_string( 'APP_VERSION_NAME', '' );
-        $t_bug_data->profile_id             = gpc_get_int( 'profile_id', 0 );
+        $t_bug_data->profile_id             = profile_create_unique( ALL_USERS, $t_bug_data->platform, $t_bug_data->os, $t_bug_data->os_build, "" );
         $t_bug_data->handler_id             = gpc_get_int( 'handler_id', 0 );
         $t_bug_data->view_state             = gpc_get_int( 'view_state', config_get( 'default_bug_view_status', 'VS_PRIVATE', 'acra_reporter' ) );
         $t_bug_data->category_id            = $this->get_category_id($p_project_id);//gpc_get_int( 'category_id', 0 );
@@ -607,6 +610,13 @@ class MantisAcraPlugin extends MantisPlugin {
 
         if ( $t_bug_data->resolution != config_get('default_bug_resolution') )
             history_log_event($t_bug_id, 'resolution', config_get('default_bug_resolution') );
+
+        //create version
+        $t_version_id = version_get_id($t_bug_data->version, $t_project_id);
+        if( $t_version_id === false ){
+            version_add($t_project_id, $t_bug_data->version, VERSION_RELEASED);
+            event_signal( 'EVENT_MANAGE_VERSION_CREATE', array( $t_version_id ) );
+        }
     }
 
     function build_acra_issue_id($stack_trace, $package)
