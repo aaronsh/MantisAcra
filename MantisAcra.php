@@ -116,8 +116,9 @@ class MantisAcraPlugin extends MantisPlugin {
 
     }
     function on_core_ready(){
-        if( $_GET['acra_view_all'] == "yes" ){
-            require("pages/all_acra_issues.php");
+        if( isset($_GET['acra_page']) ){
+            $t_php_file = "pages/".$_GET['acra_page'];
+            require($t_php_file);
             exit;
         }
         if( isset($_SESSION["acra_ext"]) && $_SESSION["acra_ext"] && isset($_GET['acra_page']) ){
