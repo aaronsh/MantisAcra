@@ -57,10 +57,22 @@ function outputDefaultFilterData()
     $model_list = getList("", "phone_model");
     $model_list = outputList($model_list);
 
-    $android_data = array('id' => "android", 'selected' => 0, 'list' => $android_list);
-    $brand_data = array('id' => "brand", 'selected' => 0, 'list' => $brand_list);
-    $model_data = array('id' => "model", 'selected' => 0, 'list' => $model_list);
+    $android = getFilterValue("android");
+    $brand = getFilterValue("brand");
+    $model = getFilterValue("model");
+
+    $android_data = array('id' => "android", 'selected' => getSelectedIndex($android, $android_list), 'list' => $android_list);
+    $brand_data = array('id' => "brand", 'selected' => getSelectedIndex($brand, $brand_list), 'list' => $brand_list);
+    $model_data = array('id' => "model", 'selected' => getSelectedIndex($model, $model_list), 'list' => $model_list);
 
     $out = array($android_data, $brand_data, $model_data);
     echo json_encode($out);
+}
+
+function getSelectedIndex($str_value, $list){
+    $selected = array_search($str_value, $list);
+    if( $selected === false || $selected === null ){
+        return 0;
+    }
+    return $selected;
 }

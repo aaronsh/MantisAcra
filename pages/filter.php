@@ -149,24 +149,9 @@ if( isset($_REQUEST['sender']) ){
     }
 
 
-    $selected = array_search($android, $android_list);
-    if( $selected === false || $selected === null ){
-        $selected = 0;
-    }
-    $android_data = array('id'=>"android", 'selected'=>$selected, 'list'=>$android_list);
-
-    $selected = array_search($brand, $brand_list);
-    if( $selected === false || $selected === null ){
-        $selected = 0;
-    }
-    $brand_data = array('id'=>"brand", 'selected'=>$selected, 'list'=>$brand_list);
-
-
-    $selected = array_search($model, $model_list);
-    if( $selected === false || $selected === null ){
-        $selected = 0;
-    }
-    $model_data = array('id'=>"model", 'selected'=>$selected, 'list'=>$model_list);
+    $android_data = array('id'=>"android", 'selected'=>getSelectedIndex($android, $android_list), 'list'=>$android_list);
+    $brand_data = array('id'=>"brand", 'selected'=>getSelectedIndex($brand, $brand_list), 'list'=>$brand_list);
+    $model_data = array('id'=>"model", 'selected'=>getSelectedIndex($model, $model_list), 'list'=>$model_list);
 
     $out = array($android_data, $brand_data, $model_data);
     echo json_encode($out);

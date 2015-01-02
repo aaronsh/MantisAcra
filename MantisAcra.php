@@ -96,7 +96,9 @@ class MantisAcraPlugin extends MantisPlugin {
   environment       X NOTNULL DEFAULT \" '' \",
   settings_system   X NOTNULL DEFAULT \" '' \",
   settings_secure   X NOTNULL DEFAULT \" '' \",
-  shared_preferences    X NOTNULL DEFAULT \" '' \"
+  shared_preferences    X NOTNULL DEFAULT \" '' \",
+  crash_date    T,
+  report_data    T
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
         return $schema;

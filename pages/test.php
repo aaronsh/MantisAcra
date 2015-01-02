@@ -1,10 +1,69 @@
 <?php
 require("acra_filter_api.php");
 
-function getAcraIssueList()
-{
+$acra_id = $_GET['id'];
+
+function getFilterQueryString(){
+    $where = "";
+    $android = getFilterValue("android");
+    if( strlen($android) > 0 ){
+        $where = '`android_version`="'.mysql_real_escape_string($android).'" ';
+    }
+
+    $brand = getFilterValue("brand");
+    if( strlen($brand) > 0 ){
+        if( strlen($where) > 0 ){
+            $where = $where.' AND '.'`phone_brand`="'.mysql_real_escape_string($brand).'" ';
+        }
+        else{
+            $where = $where.'`phone_brand`="'.mysql_real_escape_string($brand).'" ';
+        }
+    }
+
+
+    $model = getFilterValue("model");
+    if( strlen($model) > 0 ){
+        if( strlen($where) > 0 ){
+            $where = $where.' AND '.'`phone_model`="'.mysql_real_escape_string($model).'" ';
+        }
+        else{
+            $where = '`phone_model`="'.mysql_real_escape_string($model).'" ';
+        }
+    }
+
+    if( strlen($where) > 0 ){
+        $where = " AND ".$where;
+    }
+    return $where;
+}
+
+function getAcraIssueCount(){
+    $acra_id = $_GET['id'];
     $t_acra_issue_table = plugin_table("issue");
-    $query = "SELECT * FROM $t_acra_issue_table ";
+    $where = getFilterQueryString();
+    $query = "SELECT count(*) FROM $t_acra_issue_table WHERE `report_fingerprint`='".$acra_id."'".$where;
+    $result = db_query_bound($query);
+    $result = db_fetch_array($result);
+    return (int)$result['count(*)'];
+}
+
+function buildPageQueryString($page_num, $total_count){
+    $start = ($page_num -1)*50;
+    $size = $total_count - $start;
+    if( $size > 50 ){
+        $size = 50;
+    }
+    return ' LIMIT '.$start.','.$size;
+}
+
+function getAcraIssueList($page_num, $total_count)
+{
+    global $acra_id;
+    $acra_id = $_GET['id'];
+    $t_acra_issue_table = plugin_table("issue");
+
+    $where = getFilterQueryString();
+    $query = "SELECT * FROM $t_acra_issue_table WHERE `report_fingerprint`='".$acra_id."'".$where.buildPageQueryString($page_num, $total_count);
     $result = db_query_bound($query);
     $list = array();
     while (true) {
@@ -17,7 +76,56 @@ function getAcraIssueList()
     return $list;
 }
 
-$acra_issues = getAcraIssueList();
+function get_url_base(){
+    $request_url = $_SERVER['REQUEST_URI'];
+    $parts = explode("?", $request_url);
+    $request_url = $parts[0].'?acra_page=test.php&id='.$_GET['id'];
+    return $request_url;
+}
+
+function html_page_indicator($page_num, $total_count){
+    $request_url = get_url_base().'&p=';
+    $pages = (int)(($total_count + 49)/50);
+    if( $pages == 1){
+        return;
+    }
+?>
+                        <span class="floatright small">[
+                            <a href="<?php echo $request_url; ?>1">First</a>
+                            <?php
+                            if($page_num > 1 ){
+                                ?>
+                                <a href="<?php echo $request_url.($page_num - 1); ?>">Prev</a>
+                                <?php
+                            }
+                            for($i=1; $i<=$pages; $i++){
+                                ?>
+                                <a href="<?php echo $request_url.$i; ?>"><?php echo $i; ?></a>
+                                <?php
+                            }
+                            if($page_num<$pages){
+                            ?>
+                                <a href="<?php echo $request_url.($page_num+1); ?>">Next</a>
+                            <?php
+                            }
+                            ?>
+                            <a href="<?php echo $request_url.$pages; ?>">Last</a>
+                            ]
+                        </span>
+<?php
+}
+
+if( !isset($_GET['p']) ){
+    $acra_issue_count = getAcraIssueCount();
+    $_SESSION['$acra_issue_count'] = $acra_issue_count;
+    $acra_issue_page = 1;
+}
+else{
+    $acra_issue_count = $_SESSION['$acra_issue_count'];
+    $acra_issue_page = $_GET['p'];
+}
+
+$acra_issues = getAcraIssueList($acra_issue_page, $acra_issue_count);
 
 html_page_top1( lang_get( 'view_bugs_link' ) );
 
@@ -25,7 +133,7 @@ html_page_top2();
 ?>
     <div id="filter_open">
         <br />
-        <form method="post" name="filters_open" id="filters_form_open" action="view_all_set.php?f=3">
+        <form method="post" name="filters_open" id="filters_form_open" action="<?php echo get_url_base(); ?>">
             <input type="hidden" name="type" value="1" />
             <input type="hidden" name="page_number" value="1" />
             <input type="hidden" name="view_type" value="simple" />
@@ -180,26 +288,19 @@ html_page_top2();
     <tr>
         <td class="form-title" colspan="11">
                         <span class="floatleft">
-                            Viewing ACRA Issues (1 - 50 / 96)
+<?php
+    $first_in_page = ($acra_issue_page-1)*50 + 1;
+    $last_in_page = $acra_issue_page*50;
+    if( $last_in_page > $acra_issue_count ){
+        $last_in_page = $acra_issue_count;
+    }
+    echo '                            Viewing ACRA Issues ('.$first_in_page.' - '.$last_in_page.' / '.$acra_issue_count.')';
+?>
                         </span>
                         <span class="floatleft small">
                             &#160;
                         </span>
-                        <span class="floatright small">
-                            [ First&#160;Prev&#160;1&#160;
-                            <a href="view_all_bug_page.php?filter=36&page_number=2">
-                                2
-                            </a>
-                            &#160;
-                            <a href="view_all_bug_page.php?filter=36&amp;page_number=2">
-                                Next
-                            </a>
-                            &#160;
-                            <a href="view_all_bug_page.php?filter=36&amp;page_number=2">
-                                Last
-                            </a>
-                            ]
-                        </span>
+                        <?php html_page_indicator($acra_issue_page, $acra_issue_count); ?>
         </td>
     </tr>
     <tr class="row-category">
@@ -246,13 +347,7 @@ html_page_top2();
         <td>
             <input type="checkbox" name="bug_arr[]" value="201" />
         </td>
-        <td>
-            <a href="bug_update_page.php?bug_id=201">
-                <img border="0" width="16" height="16" src="http://emoney.6171host.com/mantis/images/update.png"
-                     alt="Edit" title="Edit" />
-            </a>
-            <?php echo $issue['id']; ?>
-        </td>
+        <td><?php echo $issue['id']; ?></td>
         <td><?php echo $issue['phone_brand']; ?></td>
         <td><?php echo $issue['android_version']; ?></td>
         <td class="center"><?php echo $issue['phone_model']; ?></td>
@@ -281,21 +376,7 @@ html_page_top2();
                             </select>
                             <input type="submit" class="button" value="OK" />
                         </span>
-                        <span class="floatright small">
-                            [ First&#160;Prev&#160;1&#160;
-                            <a href="view_all_bug_page.php?filter=36&page_number=2">
-                                2
-                            </a>
-                            &#160;
-                            <a href="view_all_bug_page.php?filter=36&amp;page_number=2">
-                                Next
-                            </a>
-                            &#160;
-                            <a href="view_all_bug_page.php?filter=36&amp;page_number=2">
-                                Last
-                            </a>
-                            ]
-                        </span>
+                        <?php html_page_indicator($acra_issue_page, $acra_issue_count); ?>
         </td>
     </tr>
     </table>
