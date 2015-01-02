@@ -98,7 +98,8 @@ class MantisAcraPlugin extends MantisPlugin {
   settings_secure   X NOTNULL DEFAULT \" '' \",
   shared_preferences    X NOTNULL DEFAULT \" '' \",
   crash_date    T,
-  report_data    T
+  report_date    T,
+  install_date   T
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
         return $schema;
@@ -433,6 +434,8 @@ class MantisAcraPlugin extends MantisPlugin {
         $acra_ext->shared_preferences = gpc_get_string( 'SHARED_PREFERENCES', '' );
         $acra_ext->android_version = gpc_get_string( 'ANDROID_VERSION', '' );
         $acra_ext->app_version = $t_app_version;
+        $acra_ext->crash_date = $this->covertTimeString(gpc_get_string('USER_CRASH_DATE', ''));
+        $acra_ext->install_date = $this->covertTimeString(gpc_get_string('USER_APP_START_DATE', ''));
         $acra_ext->create();
 
     }
@@ -607,6 +610,15 @@ class MantisAcraPlugin extends MantisPlugin {
             history_log_event($t_bug_id, 'resolution', config_get('default_bug_resolution') );
 
         return $t_bug_id;
+    }
+
+    function covertTimeString($s){
+        $result = "";
+        $parts = explode('T', $s);
+        $result = $parts[0].' ';
+        $parts = explode('.', $parts[1]);
+        $result = $result.$parts[0];
+        return $result;
     }
 
     function build_acra_issue_id($stack_trace, $package)

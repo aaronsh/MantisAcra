@@ -56,6 +56,23 @@ function buildPageQueryString($page_num, $total_count){
     return ' LIMIT '.$start.','.$size;
 }
 
+function buildOrderString(){
+    if( isset($_GET['key']) ){
+        $key = $_GET['key'];
+    }
+    else{
+        $key = 'id';
+    }
+    if( isset($_GET['dir']) ) {
+        $direction = $_GET['dir'];
+    }
+    else{
+        $direction = "DESC";
+    }
+    $order = "ORDER BY `$key` $direction";
+    return $order;
+}
+
 function getAcraIssueList($page_num, $total_count)
 {
     global $acra_id;
@@ -63,7 +80,7 @@ function getAcraIssueList($page_num, $total_count)
     $t_acra_issue_table = plugin_table("issue");
 
     $where = getFilterQueryString();
-    $query = "SELECT * FROM $t_acra_issue_table WHERE `report_fingerprint`='".$acra_id."'".$where.buildPageQueryString($page_num, $total_count);
+    $query = "SELECT * FROM $t_acra_issue_table WHERE `report_fingerprint`='".$acra_id."'".$where.buildOrderString().buildPageQueryString($page_num, $total_count);
     $result = db_query_bound($query);
     $list = array();
     while (true) {
@@ -113,6 +130,26 @@ function html_page_indicator($page_num, $total_count){
                             ]
                         </span>
 <?php
+}
+
+$acra_tbl_title_url = "";
+
+function html_tble_title_url($key, $order){
+    
+}
+
+//set filter
+if( !isset($_REQUEST['p']) && !isset($_REQUEST['filter']) ){
+    $_SESSION['acra_filter'] = null;
+}
+if( isset($_REQUEST['filter']) ){
+    $_SESSION['acra_filter'] = json_decode($_REQUEST['filter']);
+}
+if( isset($_SESSION['acra_filter']) ){
+    set_acra_filter($_SESSION['acra_filter']);
+}
+else{
+    set_acra_filter(null);
 }
 
 if( !isset($_GET['p']) ){
@@ -194,7 +231,8 @@ html_page_top2();
                 </tr>
                 <tr>
                     <td colspan="1">
-                        <input type="submit" name="filter" class="button-small" value="Apply Filter"/>
+                        <input id="filter" type="hidden" name="filter" value="[]">
+                        <input type="submit" name="submit" class="button-small" value="Apply Filter"/>
                     </td>
         </form>
         <td colspan="3">
@@ -228,10 +266,12 @@ html_page_top2();
                 var e = document.getElementById(filters[i].id);
                 filters[i].value = e.value;
             }
+            var filter = document.getElementById("filter");
+            filter.value = JSON.stringify(filters);
 
             jQuery.ajax({
                 type: "post",
-                url: "index.php?acra_page=filter.php",
+                url: "index.php?acra_page=filter.php&id=<?php echo $_GET['id'];?>",
                 dataType: "text",
                 data:'data='+JSON.stringify(filters)+'&sender='+select.id,
                 success: function (data) {
@@ -253,7 +293,7 @@ html_page_top2();
         function resetFilter(){
             jQuery.ajax({
                 type: "post",
-                url: "index.php?acra_page=filter.php",
+                url: "index.php?acra_page=filter.php&id=<?php echo $_GET['id'];?>",
                 dataType: "text",
                 data:"sender=reset",
                 success: function (data) {
@@ -332,6 +372,11 @@ html_page_top2();
                 Crash Date
             </a>
         </td>
+        <td>
+            <a href="view_all_set.php?sort=id&amp;dir=DESC&amp;type=2">
+                Report Date
+            </a>
+        </td>
         <td>Report Id</td>
         <td>Installation Id</td>
         <td>Start Date</td>
@@ -351,10 +396,11 @@ html_page_top2();
         <td><?php echo $issue['phone_brand']; ?></td>
         <td><?php echo $issue['android_version']; ?></td>
         <td class="center"><?php echo $issue['phone_model']; ?></td>
-        <td class="center"><?php echo 'crash date'; ?></td>
+        <td class="center"><?php echo $issue['crash_date']; ?></td>
+        <td class="center"><?php echo $issue['report_date']; ?></td>
         <td class="center"><?php echo $issue['report_id']; ?></td>
         <td class="center"><?php echo $issue['installation_id']; ?></td>
-        <td class="center"><?php echo 'startDate'; ?></td>
+        <td class="center"><?php echo $issue['install_date']; ?></td>
         <td class="center"><?php echo $issue['product_name']; ?></td>
         <td class="left"><?php echo $issue['available_mem_size'].'/'.$issue['total_mem_size']; ?></td>
     </tr>

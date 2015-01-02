@@ -39,6 +39,9 @@ class BugDataAcraExt {
     public $shared_preferences;
     public $android_version;
     public $app_version;
+    public $crash_date;
+    public $report_date;
+    public $install_date;
 
     public function create(){
         $t_issue_ext_table = plugin_table("issue");
@@ -51,7 +54,8 @@ class BugDataAcraExt {
                         dumpsys_meminfo,         dropbox,        eventslog,    radiolog,
                         is_silent,               device_id,      installation_id,  user_email,
                         device_features,         environment,    settings_system, settings_secure,
-                        shared_preferences,      android_version,app_version
+                        shared_preferences,      android_version,app_version,     crash_date,
+                        report_date,             install_date
 					    )
 					  VALUES
 					    ( " . db_param() . ',' . db_param() . ',' . db_param() . ',' . db_param() . ",
@@ -61,7 +65,8 @@ class BugDataAcraExt {
 					      " . db_param() . ',' . db_param() . ',' . db_param() . ',' . db_param() . ",
 					      " . db_param() . ',' . db_param() . ',' . db_param() . ',' . db_param() . ",
 					      " . db_param() . ',' . db_param() . ',' . db_param() . ',' . db_param() . ",
-					      " . db_param() . ',' . db_param() . ',' . db_param().')';
+					      " . db_param() . ',' . db_param() . ',' . db_param() . ',' . db_param() . ",
+					      " . 'now()' . ',' . db_param() . ')';
 
         db_query_bound( $query, Array( $this->project_id, $this->issue_id, $this->report_id, $this->report_fingerprint,
             $this->file_path, $this->phone_model, $this->phone_build, $this->phone_brand,
@@ -70,7 +75,8 @@ class BugDataAcraExt {
             $this->dumpsys_meminfo, $this->dropbox, $this->eventslog, $this->radiolog,
             $this->is_silent, $this->device_id, $this->installation_id, $this->user_email,
             $this->device_features, $this->environment, $this->settings_system, $this->settings_secure,
-            $this->shared_preferences, $this->android_version, $this->app_version ) );
+            $this->shared_preferences, $this->android_version, $this->app_version, $this->crash_date.
+            $this->report_date, $this->install_date) );
 
         $this->id = db_insert_id( $t_issue_ext_table );
 

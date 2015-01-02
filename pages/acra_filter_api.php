@@ -1,21 +1,28 @@
 <?php
 
-if (isset($_REQUEST['data'])) {
-    $_SESSION['acra_filter'] = json_decode($_REQUEST['data']);
+$acra_filter = null;
+
+function set_acra_filter($val){
+    global $acra_filter;
+    $acra_filter = $val;
 }
+
 
 function getFilterValue($filter_name)
 {
-    if (!isset($_SESSION['acra_filter'])) {
+    global $acra_filter;
+    if( $acra_filter === null ){
         return '';
     }
-    foreach ($_SESSION['acra_filter'] as $item) {
-        if (strcmp($item->id, $filter_name) === 0) {
-            $val = $item->value;
-            if (strcmp($val, "all") === 0) {
-                return '';
+    if( is_array($acra_filter) ) {
+        foreach ($acra_filter as $item) {
+            if (strcmp($item->id, $filter_name) === 0) {
+                $val = $item->value;
+                if (strcmp($val, "all") === 0) {
+                    return '';
+                }
+                return $val;
             }
-            return $val;
         }
     }
     return '';
@@ -24,7 +31,10 @@ function getFilterValue($filter_name)
 function getList($where, $what)
 {
     if (strlen($where) > 0) {
-        $where = 'WHERE ' . $where;
+        $where = "WHERE `report_fingerprint`='".$_GET['id']."' AND ".$where;
+    }
+    else{
+        $where = "WHERE `report_fingerprint`='".$_GET['id']."'";
     }
     $t_acra_issue_table = plugin_table("issue");
     $query = "SELECT `$what` FROM $t_acra_issue_table $where GROUP BY  `$what`";

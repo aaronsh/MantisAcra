@@ -2,6 +2,10 @@
 
 require('acra_filter_api.php');
 
+if (isset($_REQUEST['data'])) {
+    set_acra_filter( json_decode($_REQUEST['data']) );
+}
+
 if( isset($_REQUEST['sender']) ){
     $android_list = array('');
     $brand_list = array('');
