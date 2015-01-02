@@ -134,8 +134,43 @@ function html_page_indicator($page_num, $total_count){
 
 $acra_tbl_title_url = "";
 
-function html_tble_title_url($key, $order){
-    
+function html_tble_title( $word, $key){
+    $order = "DESC";
+    $cur_key = 'id';
+    if( isset($_GET['key']) ) {
+        $cur_key = $_GET['key'];
+    }
+
+    $cur_order = "DESC";
+    if( isset($_GET['dir']) ) {
+        $cur_order = $_GET['dir'];
+    }
+
+
+    if( strcmp($key, $cur_key) == 0){
+        if( strcmp($cur_order, "DESC") == 0 ){
+                    $order = "ASC";
+        }
+        else{
+            $order = "DESC";
+        }
+    }
+
+
+    $url = "index.php?acra_page=test.php&id=".$_GET['id'].'&p=1&key='.$key.'&dir='.$order;
+    echo '<a href="';
+    echo $url;
+    echo '">';
+    echo $word;
+    echo "</a>";
+    if( isset($_GET['key']) && strcmp($_GET['key'], $key) == 0 ) {
+        if( strcmp("DESC", $order) ) {
+            echo '<img src="images/down.gif" alt="">';
+        }
+        else{
+            echo '<img src="images/up.gif" alt="">';
+        }
+    }
 }
 
 //set filter
@@ -347,36 +382,12 @@ html_page_top2();
         <td>
             &#160;
         </td>
-        <td>
-            <a href="view_all_set.php?sort=priority&amp;dir=DESC&amp;type=2">
-                ID
-            </a>
-        </td>
-        <td>
-            <a href="view_all_set.php?sort=priority&amp;dir=DESC&amp;type=2">
-                Brand
-            </a>
-        </td>
-        <td>
-            <a href="view_all_set.php?sort=id&amp;dir=DESC&amp;type=2">
-                Android
-            </a>
-        </td>
-        <td>
-            <a href="view_all_set.php?sort=id&amp;dir=DESC&amp;type=2">
-                Model
-            </a>
-        </td>
-        <td>
-            <a href="view_all_set.php?sort=id&amp;dir=DESC&amp;type=2">
-                Crash Date
-            </a>
-        </td>
-        <td>
-            <a href="view_all_set.php?sort=id&amp;dir=DESC&amp;type=2">
-                Report Date
-            </a>
-        </td>
+        <td><?php html_tble_title('ID', "id");?></td>
+        <td><?php html_tble_title('Brand', "phone_brand");?></td>
+        <td><?php html_tble_title('Android', "android_version");?></td>
+        <td><?php html_tble_title('Model', "phone_model");?></td>
+        <td><?php html_tble_title('Crash Date', "crash_date");?></td>
+        <td><?php html_tble_title('Report Date', "report_date");?></td>
         <td>Report Id</td>
         <td>Installation Id</td>
         <td>Start Date</td>
