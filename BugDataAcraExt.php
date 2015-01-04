@@ -156,22 +156,65 @@ function acra_delete_bug_ext_by_bug_id($p_bug_id){
     $t_acra_issue_table = plugin_table("issue");
     $query = "DELETE FROM $t_acra_issue_table WHERE issue_id = '".$p_bug_id."'";
     $result = db_query_bound( $query );
-//    $result = db_fetch_array($result);
-    $result = db_result($result);
     if( $result === false){
         return false;
     }
+    $result = db_result($result);
+
     return $result;
 }
 
 
-function acra_get_bug_ext_by_bug_id($p_bug_id){
+function acra_get_bug_ext_by_id($p_id){
     $t_acra_issue_table = plugin_table("issue");
-    $query = "SELECT id FROM $t_acra_issue_table WHERE issue_id = '".$p_bug_id."' ORDER BY `id` ASC LIMIT 0,1";
+    $query = "SELECT * FROM $t_acra_issue_table WHERE id = '".$p_id."' ";
     $result = db_query_bound( $query );
-    $result = db_result($result);
     if( $result === false){
         return false;
     }
-    return $result;
+    $result = db_fetch_array($result);
+    $t_AcraBugExt = new BugDataAcraExt;
+    $t_AcraBugExt->id = $result['id'];
+    $t_AcraBugExt->project_id = $result['project_id'];
+    $t_AcraBugExt->issue_id = $result['issue_id'];
+    $t_AcraBugExt->report_id = $result['report_id'];
+    $t_AcraBugExt->report_fingerprint = $result['report_fingerprint'];
+    $t_AcraBugExt->file_path = $result['file_path'];
+    $t_AcraBugExt->phone_model = $result['phone_model'];
+    $t_AcraBugExt->phone_build = $result['phone_build'];
+    $t_AcraBugExt->phone_brand = $result['phone_brand'];
+    $t_AcraBugExt->product_name = $result['product_name'];
+    $t_AcraBugExt->total_mem_size = $result['total_mem_size'];
+    $t_AcraBugExt->available_mem_size = $result['available_mem_size'];
+    $t_AcraBugExt->custom_data = $result['custom_data'];
+    $t_AcraBugExt->initial_configuration = $result['initial_configuration'];
+    $t_AcraBugExt->crash_configuration = $result['crash_configuration'];
+    $t_AcraBugExt->display = $result['display'];
+    $t_AcraBugExt->user_comment = $result['user_comment'];
+    $t_AcraBugExt->dumpsys_meminfo = $result['dumpsys_meminfo'];
+    $t_AcraBugExt->dropbox = $result['dropbox'];
+    $t_AcraBugExt->eventslog = $result['eventslog'];
+    $t_AcraBugExt->radiolog = $result['radiolog'];
+    $t_AcraBugExt->is_silent = $result['is_silent'];
+    $t_AcraBugExt->device_id = $result['device_id'];
+    $t_AcraBugExt->installation_id = $result['installation_id'];
+    $t_AcraBugExt->user_email = $result['user_email'];
+    $t_AcraBugExt->device_features = $result['device_features'];
+    $t_AcraBugExt->environment = $result['environment'];
+    $t_AcraBugExt->settings_system = $result['settings_system'];
+    $t_AcraBugExt->settings_secure = $result['settings_secure'];
+    $t_AcraBugExt->shared_preferences = $result['shared_preferences'];
+
+    return $t_AcraBugExt;
+}
+
+function acra_get_fingerprint_by_bug_id($p_id){
+    $t_acra_issue_table = plugin_table("issue");
+    $query = "SELECT `report_fingerprint` FROM $t_acra_issue_table WHERE `issue_id` = '".$p_id."' ";
+    $result = db_query_bound( $query );
+    if( $result === false){
+        return false;
+    }
+    $result = db_fetch_array($result);
+    return $result['report_fingerprint'];
 }

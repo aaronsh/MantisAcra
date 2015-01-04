@@ -8,6 +8,7 @@
 require_once( config_get( 'class_path' ) . 'MantisPlugin.class.php' );
 
 require('BugDataAcraExt.php');
+require("VersionAcraExt.php");
 
 class MantisAcraPlugin extends MantisPlugin {
 
@@ -42,7 +43,9 @@ class MantisAcraPlugin extends MantisPlugin {
             'EVENT_LAYOUT_BODY_END' => "attach_javascript",
             'EVENT_UPDATE_BUG' => 'update_bug',
             'EVENT_BUG_DELETED' => "delete_bug",
-            'EVENT_DISPLAY_BUG_ID' => 'show_bug_id'
+            'EVENT_DISPLAY_BUG_ID' => 'show_bug_id',
+            'EVENT_MANAGE_VERSION_UPDATE_FORM' => 'show_version_acra_option',
+            'EVENT_MANAGE_VERSION_UPDATE' => 'update_version_acra_option'
         );
         return $hooks;
     }
@@ -211,6 +214,76 @@ class MantisAcraPlugin extends MantisPlugin {
     <?php
     }
 
+    function show_version_acra_option($p_event, $p_ver_id){
+        if( isset($p_ver_id) ){
+            $t_ver_data = version_get($p_ver_id);
+
+            $t_acra_prj_table = plugin_table("project");
+            $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$t_ver_data->project_id;
+            $result = db_query_bound( $query );
+            $result = db_fetch_array($result);
+            $t_package_name = "";
+            if( $result !== false && is_array($result) ){
+                $t_package_name = $result['package_name'];
+            }
+            if( strlen($t_package_name) === 0 ){
+                return;
+            }
+        }
+        ?>
+        <tr class="row-1">
+            <td class="category">Mapping file</td>
+            <td>
+                <input type="file" name="map_file" />
+            </td>
+        </tr>
+    <?php
+    }
+
+    function update_version_acra_option($p_event, $p_arr){
+        if( isset($p_arr) ){
+            if($_FILES['map_file']['error'] > 0 ){
+                trigger_error( ERROR_PLUGIN_GENERIC, E_USER_ERROR );
+            }
+            $t_ver_data = version_get($p_arr);
+            $t_acra_prj_table = plugin_table("project");
+            $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$t_ver_data->project_id;
+            $result = db_query_bound( $query );
+            $result = db_fetch_array($result);
+            $t_package_name = "";
+            if( $result !== false && is_array($result) ){
+                $t_package_name = $result['package_name'];
+            }
+            if( strlen($t_package_name) === 0 ){
+                trigger_error( ERROR_PLUGIN_GENERIC, E_USER_ERROR );
+            }
+
+            $t_map_name = array('upload', 'acra', $t_package_name, date("Y"));
+            $file_name = str_ireplace('manage_proj_ver_update.php', '',$_SERVER['SCRIPT_FILENAME']);
+            $file_name = $file_name.implode(DIRECTORY_SEPARATOR, $t_map_name);
+            create_map_file_folder($file_name);
+            $t_ver_name = preg_replace("^[ ?/\\\\]{1}^is", "_", $t_ver_data->version).'.map';
+            $file_name = $file_name.DIRECTORY_SEPARATOR.$t_ver_name;
+
+            handle_mapping_file($_FILES['map_file']['tmp_name'], $file_name);
+
+            $t_acra_ver_table = plugin_table("version");
+            $query = "SELECT * FROM $t_acra_ver_table WHERE `version_id` = ".$p_arr;
+            $result = db_query_bound( $query );
+            $rows =$result->RowCount();
+            $map = mysql_real_escape_string($file_name);
+            if( $rows === 0 ){
+                $query = "INSERT INTO $t_acra_ver_table (`id`, `version_id`, `map_file`) VALUES (NULL, '$p_arr', '$map'); ";
+            }
+            else{
+                $query = "UPDATE $t_acra_ver_table SET `map_file` = '$map' WHERE `version_id` = $p_arr; ";
+            }
+            db_query_bound($query);
+            //update the title of bugs
+            update_bug_summary_by_version($t_ver_data->version, $file_name);
+        }
+    }
+
     function post_project_update($p_param1, $p_param2){
         error_log("post_project_update ".$p_param2);
         $t_acra_prj 	= gpc_get_bool( 'acra_project' );
@@ -241,12 +314,24 @@ class MantisAcraPlugin extends MantisPlugin {
 
     function attach_javascript(){
         $_SESSION["acra_ext"] = true;
+        if( isset($_GET['acra_page']) ){
+            switch($_GET['acra_page']){
+                case 'test.php':
+                    //require("pages/test.php");
+                    $this->show_acra_view_issue_plugin();
+                    return;
+            }
+        }
         if( $this->show_acra_befrief_btn() ){
             $this->show_acra_brief_buttons_plugin();
             return;
         }
-        if( $this->show_acra_detail_buttons_plugin() ){
+        if( $this->show_acra_detail_btn() ){
+            $this->show_acra_detail_buttons_plugin();
             return;
+        }
+        if( $this->show_acra_update_version_mapping_option() ){
+            $this->enable_acra_update_version_mapping_option();
         }
         ?>
     <?php
@@ -308,26 +393,15 @@ class MantisAcraPlugin extends MantisPlugin {
     <?php
     }
 
+    function show_acra_detail_btn(){
+        if( strpos($_SERVER['REQUEST_URI'], "view.php") !== false && isset($_GET['id'])){
+            return true;
+        }
+        return false;
+    }
+
     function show_acra_detail_buttons_plugin(){
         ?>
-        <script type="text/javascript" src="<?php echo plugin_file("fancyBox/fancybox.js"); ?>"></script>
-        <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>" media="screen" />
-        <style type="text/css">
-            .acra_popup{
-                width:1200px;
-                height:400px;
-                display: none;
-                padding: 0px;
-            }
-            .acra_frame{
-                width:100%;
-                height:100%;
-            }
-            .fancybox{
-                font-weight: normal;
-            }
-        </style>
-
         <script>
             var cells = jQuery("td");
             var reg = new RegExp(/^\s*ID\s*$/);
@@ -341,46 +415,34 @@ class MantisAcraPlugin extends MantisPlugin {
             }
             if( idCell != null ){
                 var shorts = idCell.parentElement.previousElementSibling.firstElementChild;
-                var id = idCell.parentElement.nextElementSibling.firstElementChild.innerText
-                var ids=[];
-                ids.push(id);
-                jQuery.ajax({
-                    type: "post",
-                    url: "index.php?acra_page=check.php",
-                    dataType: "text",
-                    data:'data='+JSON.stringify(ids),
-                    success: function (data) {
-                        try{
-                            data = JSON.parse(data);
-
-                            for(var i=0; i<data.length; i++){
-                                if( data[i].id == ids[i] ){
-                                    var matches = data[i].txt.match(/<a[^>]+/);
-                                    if( matches != null ){
-                                        jQuery(shorts).append('<span class="bracket-link">[&nbsp;'+matches[0]+'>View ACRA more info</a>&nbsp;]</span>');
-                                        var frm = data[i].popup;
-                                        frm = frm.replace('brief.php', 'detail.php');
-                                        jQuery('#acra_dialog').append(frm);
-                                    }
-                                }
-                                jQuery('.fancybox').fancybox();
-                            }
-                        } catch( ex ){
-                            console.log(ex);
-                        }
-                        console.log(data);
-                    },
-                    error: function (XMLHttpRequest, textStatus, errorThrown) {
-                        alert(errorThrown);
-                    }
-                });
+                jQuery(shorts).append('<span class="bracket-link">[&nbsp;<a href="index.php?acra_page=test.php&acra_id=<?php echo gpc_get_string("id");?>">View ACRA more info</a>&nbsp;]</span>');
             }
         </script>
-        <div id="acra_dialog" style="display:none;">
-
-        </div>
     <?php
     }
+
+    function show_acra_update_version_mapping_option(){
+        if( strpos($_SERVER['REQUEST_URI'], "manage_proj_ver_edit_page.php") !== false ){
+            return true;
+        }
+        return false;
+    }
+
+    function enable_acra_update_version_mapping_option(){
+        ?>
+        <script>
+            var forms = document.getElementsByTagName('form');
+            for(var i=0; i<forms.length; i++){
+                var formNode = forms[i];
+                if( formNode.action.indexOf('manage_proj_ver_update.php') > 0 ){
+                    formNode.enctype = "multipart/form-data"
+                    break;
+                }
+            }
+        </script>
+    <?php
+    }
+
 
     function save_acra_issue($p_project_id){
         require( 'ProfileAcraExt.php' );
@@ -476,7 +538,7 @@ class MantisAcraPlugin extends MantisPlugin {
         $t_bug_data->resolution             = OPEN;//gpc_get_string('resolution', config_get( 'default_bug_resolution' ) );
         $t_bug_data->status                 = NEW_;//gpc_get_string( 'status', config_get( 'bug_submit_status' ) );
         $t_bug_data->description            = gpc_get_string( 'STACK_TRACE' );//gpc_get_string( 'description' );
-        $t_bug_data->summary                = "Acra report crash  ".$this->get_crash_position($t_bug_data->description);
+        $t_bug_data->summary                = "Acra report crash  ".get_crash_position($t_bug_data->description);
         $t_bug_data->steps_to_reproduce     = gpc_get_string( 'LOGCAT', "" );
         $t_bug_data->additional_information = gpc_get_string( 'CRASH_CONFIGURATION', "" );
         $t_bug_data->due_date               = gpc_get_string( 'USER_CRASH_DATE', '');
@@ -635,20 +697,7 @@ class MantisAcraPlugin extends MantisPlugin {
         return md5($stack_trace);
     }
 
-    function get_crash_position($stack_trace)
-    {
-        $lines = explode("\n", $stack_trace);
-        $t_prev_line = "";
-        for($i=count($lines)-1; $i>=0; $i--){
-            $line = trim($lines[$i]);
-            if( strlen($line)>0 && strpos($line, "at ") !== 0 ){
-                return $t_prev_line;
-            }
-            $t_prev_line = $line;
-        }
 
-        return $t_prev_line;
-    }
 
     function array_find($needle, $haystack)
     {
@@ -705,20 +754,40 @@ class MantisAcraPlugin extends MantisPlugin {
         return $p_string;
     }
 
-    function show_acra_befrief_btn(){
-        if( strpos($_SERVER['REQUEST_URI'], "view_all_bug_page.php") !== false ){
+    function show_acra_befrief_btn()
+    {
+        if (strpos($_SERVER['REQUEST_URI'], "view_all_bug_page.php") !== false) {
             return true;
         }
-        if( strpos($_SERVER['REQUEST_URI'], "my_view_page.php") !== false ){
+        if (strpos($_SERVER['REQUEST_URI'], "my_view_page.php") !== false) {
             return true;
         }
         return false;
     }
+    
+    function show_acra_view_issue_plugin(){
+        ?>
+        <script type="text/javascript" src="<?php echo plugin_file("fancyBox/fancybox.js"); ?>"></script>
+        <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>" media="screen" />
+        <style type="text/css">
+            .acra_popup{
+                width:1200px;
+                height:400px;
+                display: none;
+                padding: 0px;
+            }
+            .acra_frame{
+                width:100%;
+                height:100%;
+            }
+            .fancybox{
+                font-weight: normal;
+            }
+        </style>
 
-    function show_acra_detail_btn(){
-        if( strpos($_SERVER['REQUEST_URI'], "view.php") !== false ){
-            return true;
-        }
-        return false;
+        <script>
+            jQuery('.fancybox').fancybox();
+        </script>
+    <?php
     }
 }

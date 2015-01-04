@@ -77,13 +77,9 @@ header('X-Frame-Options:SAMEORIGIN');
 
 <body>
 <?php
-$id = gpc_get_string("id");
-$hash = gpc_get_string("hash");
-$acra_bug_ext = acra_get_bug_ext_by_issue_id($id);
-if( $acra_bug_ext->report_fingerprint != $hash ){
-    echo '</body></html>';
-}
-$t_bug = bug_get($id);
+$id = gpc_get_string("acra_id");
+$acra_bug_ext = acra_get_bug_ext_by_id($id);
+$t_bug = bug_get($acra_bug_ext->issue_id);
 ?>
 
 <div class="ch-box-lite ch-box-error">
