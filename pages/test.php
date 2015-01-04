@@ -403,7 +403,7 @@ html_page_top2();
         <td>
             <input type="checkbox" name="bug_arr[]" value="201" />
         </td>
-        <td><?php echo $issue['id']; ?>&nbsp;<a class="fancybox" href="#acra_0000002" "><img border="0" width="18" height="16" src="/mantis/plugin_file.php?file=MantisAcra/acra_logo.png" alt="Acra" title="Acra"></a></td>
+        <td><?php echo $issue['id']; ?>&nbsp;<a class="fancybox" href="#acra_<?php echo sprintf("%06d", $issue['id']);?>" "><img border="0" width="18" height="16" src="/mantis/plugin_file.php?file=MantisAcra/acra_logo.png" alt="Acra" title="Acra"></a></td>
         <td><?php echo $issue['phone_brand']; ?></td>
         <td><?php echo $issue['android_version']; ?></td>
         <td class="center"><?php echo $issue['phone_model']; ?></td>
@@ -438,6 +438,14 @@ html_page_top2();
     </tr>
     </table>
     </form>
+    <div id="acra_dialog" style="display:none;">
+<?php foreach( $acra_issues as $issue){?>
+        <div class="acra_popup" id="acra_<?php echo sprintf("%06d", $issue['id']);?>" style="display: none;">
+            <iframe class="acra_frame" src="index.php?acra_page=detail.php&amp;id=<?php echo $issue['id']; ?>">
+            </iframe>
+        </div>
+<?php } ?>
+    </div>
 <?php
 
 html_page_bottom();

@@ -241,13 +241,12 @@ class MantisAcraPlugin extends MantisPlugin {
 
     function attach_javascript(){
         $_SESSION["acra_ext"] = true;
-        if( issset($_GET['acra_page']) ){
-            echo "good";
+        if( isset($_GET['acra_page']) ){
             switch($_GET['acra_page']){
                 case 'test.php':
                     //require("pages/test.php");
                     $this->show_acra_view_issue_plugin();
-                    break;
+                    return;
             }
         }
         if( $this->show_acra_befrief_btn() ){
@@ -752,59 +751,8 @@ class MantisAcraPlugin extends MantisPlugin {
         </style>
 
         <script>
-        /*
-            var cells = jQuery("td");
-            var reg = new RegExp(/^\s*ID\s*$/);
-            var idCell = null;
-            for(var i=0; i<cells.length; i++){
-                var str = cells[i].innerText;
-                if( reg.test(str) ){
-                    idCell = cells[i];
-                    break;
-                }
-            }
-            if( idCell != null ){
-                var shorts = idCell.parentElement.previousElementSibling.firstElementChild;
-                var id = idCell.parentElement.nextElementSibling.firstElementChild.innerText
-                var ids=[];
-                ids.push(id);
-                jQuery.ajax({
-                    type: "post",
-                    url: "index.php?acra_page=check.php",
-                    dataType: "text",
-                    data:'data='+JSON.stringify(ids),
-                    success: function (data) {
-                        try{
-                            data = JSON.parse(data);
-
-                            for(var i=0; i<data.length; i++){
-                                if( data[i].id == ids[i] ){
-                                    var matches = data[i].txt.match(/<a[^>]+/);
-                                    if( matches != null ){
-                                        jQuery(shorts).append('<span class="bracket-link">[&nbsp;'+matches[0]+'>View ACRA more info</a>&nbsp;]</span>');
-                                        var frm = data[i].popup;
-                                        frm = frm.replace('brief.php', 'detail.php');
-                                        jQuery('#acra_dialog').append(frm);
-                                    }
-                                }
-                                jQuery('.fancybox').fancybox();
-                            }
-                        } catch( ex ){
-                            console.log(ex);
-                        }
-                        console.log(data);
-                    },
-                    error: function (XMLHttpRequest, textStatus, errorThrown) {
-                        alert(errorThrown);
-                    }
-                });
-            }
-            */
             jQuery('.fancybox').fancybox();
         </script>
-        <div id="acra_dialog" style="display:none;">
-<div class="acra_popup" id="acra_0000002" ><iframe class="acra_frame" src="index.php?acra_page=brief.php&id=0000002&hash=ca8c941c6a67b5fe042557b1a5b3e4d2"  ></iframe></div>
-        </div>
     <?php
     }
 }
