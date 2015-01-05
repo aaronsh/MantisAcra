@@ -67,12 +67,14 @@ class MantisAcraPlugin extends MantisPlugin {
   map_file      C(128) NOTNULL DEFAULT \" '' \"
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
+/*
         $schema[] = array("CreateTableSQL", array(plugin_table("report"), "
   id 		 I  NOTNULL PRIMARY AUTO,
   total 		 I  NOTNULL DEFAULT '0',
   resolved 		 I  NOTNULL DEFAULT '0',
   date   T
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
+*/
 
         $schema[] = array("CreateTableSQL", array(plugin_table("issue"), "
   id 		 I  NOTNULL PRIMARY AUTO,
