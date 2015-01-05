@@ -538,7 +538,7 @@ class MantisAcraPlugin extends MantisPlugin {
         $t_bug_data->resolution             = OPEN;//gpc_get_string('resolution', config_get( 'default_bug_resolution' ) );
         $t_bug_data->status                 = NEW_;//gpc_get_string( 'status', config_get( 'bug_submit_status' ) );
         $t_bug_data->description            = gpc_get_string( 'STACK_TRACE' );//gpc_get_string( 'description' );
-        $t_bug_data->summary                = "Acra report crash  ".get_crash_position($t_bug_data->description);
+        $t_bug_data->summary                = get_bug_summary_by_version(gpc_get_string( 'APP_VERSION_NAME', '' ), $t_bug_data->description);
         $t_bug_data->steps_to_reproduce     = gpc_get_string( 'LOGCAT', "" );
         $t_bug_data->additional_information = gpc_get_string( 'CRASH_CONFIGURATION', "" );
         $t_bug_data->due_date               = gpc_get_string( 'USER_CRASH_DATE', '');
@@ -763,32 +763,6 @@ class MantisAcraPlugin extends MantisPlugin {
             return true;
         }
         return false;
-    }
-    
-    function show_acra_view_issue_plugin(){
-        ?>
-        <script type="text/javascript" src="<?php echo plugin_file("fancyBox/fancybox.js"); ?>"></script>
-        <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>" media="screen" />
-        <style type="text/css">
-            .acra_popup{
-                width:1200px;
-                height:400px;
-                display: none;
-                padding: 0px;
-            }
-            .acra_frame{
-                width:100%;
-                height:100%;
-            }
-            .fancybox{
-                font-weight: normal;
-            }
-        </style>
-
-        <script>
-            jQuery('.fancybox').fancybox();
-        </script>
-    <?php
     }
     
     function show_acra_view_issue_plugin(){
