@@ -67,6 +67,13 @@ class MantisAcraPlugin extends MantisPlugin {
   map_file      C(128) NOTNULL DEFAULT \" '' \"
 ",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
+        $schema[] = array("CreateTableSQL", array(plugin_table("report"), "
+  id 		 I  NOTNULL PRIMARY AUTO,
+  total 		 I  NOTNULL DEFAULT '0',
+  resolved 		 I  NOTNULL DEFAULT '0',
+  date   T
+",Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
+
         $schema[] = array("CreateTableSQL", array(plugin_table("issue"), "
   id 		 I  NOTNULL PRIMARY AUTO,
   project_id 	  I  NOTNULL DEFAULT '0',
@@ -122,6 +129,10 @@ class MantisAcraPlugin extends MantisPlugin {
 
     }
     function on_core_ready(){
+        if( strcmp('manage_proj_ver_delete.php', $this->get_page_name()) === 0 ){
+
+        }
+
         if( isset($_GET['acra_page']) ){
             $t_php_file = "pages/".$_GET['acra_page'];
             require($t_php_file);
@@ -394,7 +405,8 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function show_acra_detail_btn(){
-        if( strpos($_SERVER['REQUEST_URI'], "view.php") !== false && isset($_GET['id'])){
+        $page = $this->get_page_name();
+        if( strcmp($page, "view.php") === 0 && isset($_GET['id'])){
             return true;
         }
         return false;
@@ -402,7 +414,32 @@ class MantisAcraPlugin extends MantisPlugin {
 
     function show_acra_detail_buttons_plugin(){
         ?>
+        <div id="restored_stacktrace" style="display:none">
+            <?php
+            $id = gpc_get_string("id", '');
+            $t_bug = bug_get($id);
+            $t_bug_text = bug_get_text_field($id, 'description');
+            $t_restore_file = get_restore_file_by_version_name($t_bug->version);
+            $t_bug_text = restore_stacktrace($t_bug_text, $t_restore_file);
+            $t_bug_text = htmlentities($t_bug_text);
+            $t_bug_text = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $t_bug_text);
+            echo str_replace("\n", "<br>\n", $t_bug_text);
+            ?>
+        </div>
         <script>
+            //update stack trace
+            var list = jQuery(".category");
+            for( var i=0; i<list.length; i++){
+                var e = list[i];
+                var txt = e.innerText;
+                if( "Description" == txt ) {
+                    e = e.nextSibling;
+                    d = document.getElementById('restored_stacktrace')
+                    e.innerHTML = d.innerHTML;
+                    break;
+                }
+            }
+
             var cells = jQuery("td");
             var reg = new RegExp(/^\s*ID\s*$/);
             var idCell = null;
@@ -422,7 +459,8 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function show_acra_update_version_mapping_option(){
-        if( strpos($_SERVER['REQUEST_URI'], "manage_proj_ver_edit_page.php") !== false ){
+        $page = $this->get_page_name();
+        if( strcmp($page, "manage_proj_ver_edit_page.php") === 0 ){
             return true;
         }
         return false;
@@ -445,28 +483,17 @@ class MantisAcraPlugin extends MantisPlugin {
 
 
     function save_acra_issue($p_project_id){
-        require( 'ProfileAcraExt.php' );
-        $t_user_id = $this->get_user_id();
-        $t_project_id = $p_project_id;
-        $t_project_name = project_get_name($p_project_id);
-        $t_fingerprint = $this->build_acra_issue_id(gpc_get_string( 'STACK_TRACE' ), gpc_get_string('PACKAGE_NAME'));
-        $t_app_version = gpc_get_string( 'APP_VERSION_NAME', '' );
-        $t_duplicated_bug_id = acra_get_bug_id_by_fingerprint($t_fingerprint, $t_app_version);
-        if( $t_duplicated_bug_id === false ){
-            //new crash report, save a bug record
-            $t_duplicated_bug_id = $this->save_bug($t_project_id, $t_user_id);
-            //create version if possible
-            $t_version_id = version_get_id($t_app_version, $t_project_id);
-            if( $t_version_id === false ){
-                version_add($t_project_id, $t_app_version, VERSION_RELEASED);
-                event_signal( 'EVENT_MANAGE_VERSION_CREATE', array( $t_version_id ) );
-            }
+        if( acra_get_issue_id_by_report_id( gpc_get_string( 'REPORT_ID', '' ) ) !== false ){
+            return;
         }
+        $t_app_version = gpc_get_string( 'APP_VERSION_NAME', '' );
+        $t_project_id = $p_project_id;
+        $t_fingerprint = $this->build_acra_issue_fingerprint(gpc_get_string( 'STACK_TRACE' ), gpc_get_string('PACKAGE_NAME'));
 
         //save acra issue extionsion
         $acra_ext = new BugDataAcraExt;
         $acra_ext->project_id = $t_project_id;
-        $acra_ext->issue_id = $t_duplicated_bug_id;
+        $acra_ext->issue_id = 0;
         $acra_ext->report_id = gpc_get_string( 'REPORT_ID', '' );
         $acra_ext->report_fingerprint = $t_fingerprint;
         $acra_ext->file_path = gpc_get_string( 'FILE_PATH', '' );
@@ -500,12 +527,41 @@ class MantisAcraPlugin extends MantisPlugin {
         $acra_ext->install_date = $this->covertTimeString(gpc_get_string('USER_APP_START_DATE', ''));
         $acra_ext->create();
 
+        $t_duplicated_bug_id = false;
+        set_time_limit(45);
+        $tries = 0;
+        while($tries < 30 ) {
+            $result = acra_get_bug_id_by_fingerprint($t_fingerprint, $t_app_version);
+            error_log("acra_get_bug_id_by_fingerprint ".json_encode($result));
+            if( strcmp('0', $result['id']) !== 0 ){
+                $t_duplicated_bug_id = $result['id'];
+                break;
+            }
+            elseif( $result['count'] == 1 ){
+                break;
+            }
+            sleep(1); //wait one second
+            $tries = $tries + 1;
+        }
+
+        if( $t_duplicated_bug_id === false ){
+            //new crash report, save a bug record
+            $t_user_id = $this->get_user_id();
+            $t_duplicated_bug_id = $this->save_bug($t_project_id, $t_user_id);
+            //create version if possible
+            $t_version_id = version_get_id($t_app_version, $t_project_id);
+            if( $t_version_id === false ){
+                version_add($t_project_id, $t_app_version, VERSION_RELEASED);
+                event_signal( 'EVENT_MANAGE_VERSION_CREATE', array( $t_version_id ) );
+            }
+        }
+        acra_update_bug_id_by_fingerprint($t_fingerprint, $t_duplicated_bug_id);
     }
 
     function save_bug($p_project_id, $p_user_id){
+        require( 'ProfileAcraExt.php' );
 
         $t_project_id = $p_project_id;
-        $t_project_name = project_get_name($p_project_id);
 
         global $g_cache_current_user_id;
         $g_cache_current_user_id = $p_user_id;
@@ -538,7 +594,7 @@ class MantisAcraPlugin extends MantisPlugin {
         $t_bug_data->resolution             = OPEN;//gpc_get_string('resolution', config_get( 'default_bug_resolution' ) );
         $t_bug_data->status                 = NEW_;//gpc_get_string( 'status', config_get( 'bug_submit_status' ) );
         $t_bug_data->description            = gpc_get_string( 'STACK_TRACE' );//gpc_get_string( 'description' );
-        $t_bug_data->summary                = "Acra report crash  ".get_crash_position($t_bug_data->description);
+        $t_bug_data->summary                = get_bug_summary_by_version(gpc_get_string( 'APP_VERSION_NAME', '' ), $t_bug_data->description);
         $t_bug_data->steps_to_reproduce     = gpc_get_string( 'LOGCAT', "" );
         $t_bug_data->additional_information = gpc_get_string( 'CRASH_CONFIGURATION', "" );
         $t_bug_data->due_date               = gpc_get_string( 'USER_CRASH_DATE', '');
@@ -683,7 +739,7 @@ class MantisAcraPlugin extends MantisPlugin {
         return $result;
     }
 
-    function build_acra_issue_id($stack_trace, $package)
+    function build_acra_issue_fingerprint($stack_trace, $package)
     {
 /*
         $lines = explode("\n", $stack_trace);
@@ -733,18 +789,7 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function update_bug($p_event, $p_bug_data, $p_bug_id){
-        var_dump($p_event);
-        var_dump($p_bug_data);
-        var_dump($p_bug_id);
-        error_log(json_encode($p_event));
-        error_log(json_encode($p_bug_data));
-        error_log(json_encode($p_bug_id));
         $t_bug_data = bug_get($p_bug_id);
-        error_log("old bug status:".$t_bug_data->status);
-        error_log("old bug resolution:".$t_bug_data->resolution);
-
-        error_log("new bug status:".$p_bug_data->status);
-        error_log("new bug resolution:".$p_bug_data->resolution);
     }
 
     function show_bug_id($p_event, $p_string, $p_bug_id){
@@ -756,10 +801,11 @@ class MantisAcraPlugin extends MantisPlugin {
 
     function show_acra_befrief_btn()
     {
-        if (strpos($_SERVER['REQUEST_URI'], "view_all_bug_page.php") !== false) {
+        $page = $this->get_page_name();
+        if (strcmp($page, "view_all_bug_page.php") === 0) {
             return true;
         }
-        if (strpos($_SERVER['REQUEST_URI'], "my_view_page.php") !== false) {
+        if (strcmp($page,  "my_view_page.php") === 0) {
             return true;
         }
         return false;
@@ -789,5 +835,12 @@ class MantisAcraPlugin extends MantisPlugin {
             jQuery('.fancybox').fancybox();
         </script>
     <?php
+    }
+
+    function get_page_name(){
+        if( preg_match("/\\/([^\\/]+\\.php)\\??/", $_SERVER['SCRIPT_FILENAME'], $matches) === 1){
+            return $matches[1];
+        }
+        return '';
     }
 }
