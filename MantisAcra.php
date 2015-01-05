@@ -122,6 +122,10 @@ class MantisAcraPlugin extends MantisPlugin {
 
     }
     function on_core_ready(){
+        if( strcmp('manage_proj_ver_delete.php', $this->get_page_name()) === 0 ){
+
+        }
+
         if( isset($_GET['acra_page']) ){
             $t_php_file = "pages/".$_GET['acra_page'];
             require($t_php_file);
@@ -394,7 +398,8 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function show_acra_detail_btn(){
-        if( strpos($_SERVER['REQUEST_URI'], "view.php") !== false && isset($_GET['id'])){
+        $page = $this->get_page_name();
+        if( strcmp($page, "view.php") === 0 && isset($_GET['id'])){
             return true;
         }
         return false;
@@ -402,7 +407,32 @@ class MantisAcraPlugin extends MantisPlugin {
 
     function show_acra_detail_buttons_plugin(){
         ?>
+        <div id="restored_stacktrace" style="display:none">
+            <?php
+            $id = gpc_get_string("id", '');
+            $t_bug = bug_get($id);
+            $t_bug_text = bug_get_text_field($id, 'description');
+            $t_restore_file = get_restore_file_by_version_name($t_bug->version);
+            $t_bug_text = restore_stacktrace($t_bug_text, $t_restore_file);
+            $t_bug_text = htmlentities($t_bug_text);
+            $t_bug_text = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $t_bug_text);
+            echo str_replace("\n", "<br>\n", $t_bug_text);
+            ?>
+        </div>
         <script>
+            //update stack trace
+            var list = jQuery(".category");
+            for( var i=0; i<list.length; i++){
+                var e = list[i];
+                var txt = e.innerText;
+                if( "Description" == txt ) {
+                    e = e.nextSibling;
+                    d = document.getElementById('restored_stacktrace')
+                    e.innerHTML = d.innerHTML;
+                    break;
+                }
+            }
+
             var cells = jQuery("td");
             var reg = new RegExp(/^\s*ID\s*$/);
             var idCell = null;
@@ -422,7 +452,8 @@ class MantisAcraPlugin extends MantisPlugin {
     }
 
     function show_acra_update_version_mapping_option(){
-        if( strpos($_SERVER['REQUEST_URI'], "manage_proj_ver_edit_page.php") !== false ){
+        $page = $this->get_page_name();
+        if( strcmp($page, "manage_proj_ver_edit_page.php") === 0 ){
             return true;
         }
         return false;
@@ -756,10 +787,11 @@ class MantisAcraPlugin extends MantisPlugin {
 
     function show_acra_befrief_btn()
     {
-        if (strpos($_SERVER['REQUEST_URI'], "view_all_bug_page.php") !== false) {
+        $page = $this->get_page_name();
+        if (strcmp($page, "view_all_bug_page.php") === 0) {
             return true;
         }
-        if (strpos($_SERVER['REQUEST_URI'], "my_view_page.php") !== false) {
+        if (strcmp($page,  "my_view_page.php") === 0) {
             return true;
         }
         return false;
@@ -789,5 +821,12 @@ class MantisAcraPlugin extends MantisPlugin {
             jQuery('.fancybox').fancybox();
         </script>
     <?php
+    }
+
+    function get_page_name(){
+        if( preg_match("/\\/([^\\/]+\\.php)\\??/", $_SERVER['SCRIPT_FILENAME'], $matches) === 1){
+            return $matches[1];
+        }
+        return '';
     }
 }
