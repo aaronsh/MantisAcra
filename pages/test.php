@@ -1,7 +1,10 @@
 <?php
 require("acra_filter_api.php");
-
-$acra_id = $_GET['id'];
+$t_plugin_path = config_get( 'plugin_path' );
+if( isset($_GET['acra_id']) ){
+    require_once( $t_plugin_path . 'MantisAcra' . DIRECTORY_SEPARATOR . 'BugDataAcraExt.php' );
+    $_GET['acra_hash'] = acra_get_fingerprint_by_bug_id($_GET['acra_id']);
+}
 
 function getFilterQueryString(){
     $where = "";
@@ -38,7 +41,7 @@ function getFilterQueryString(){
 }
 
 function getAcraIssueCount(){
-    $acra_id = $_GET['id'];
+    $acra_id = $_GET['acra_hash'];
     $t_acra_issue_table = plugin_table("issue");
     $where = getFilterQueryString();
     $query = "SELECT count(*) FROM $t_acra_issue_table WHERE `report_fingerprint`='".$acra_id."'".$where;
@@ -76,7 +79,7 @@ function buildOrderString(){
 function getAcraIssueList($page_num, $total_count)
 {
     global $acra_id;
-    $acra_id = $_GET['id'];
+    $acra_id = $_GET['acra_hash'];
     $t_acra_issue_table = plugin_table("issue");
 
     $where = getFilterQueryString();
@@ -96,7 +99,7 @@ function getAcraIssueList($page_num, $total_count)
 function get_url_base(){
     $request_url = $_SERVER['REQUEST_URI'];
     $parts = explode("?", $request_url);
-    $request_url = $parts[0].'?acra_page=test.php&id='.$_GET['id'];
+    $request_url = $parts[0].'?acra_page=test.php&acra_hash='.$_GET['acra_hash'];
     return $request_url;
 }
 
@@ -157,7 +160,7 @@ function html_tble_title( $word, $key){
     }
 
 
-    $url = "index.php?acra_page=test.php&id=".$_GET['id'].'&p=1&key='.$key.'&dir='.$order;
+    $url = "index.php?acra_page=test.php&acra_hash=".$_GET['acra_hash'].'&p=1&key='.$key.'&dir='.$order;
     echo '<a href="';
     echo $url;
     echo '">';
@@ -306,7 +309,7 @@ html_page_top2();
 
             jQuery.ajax({
                 type: "post",
-                url: "index.php?acra_page=filter.php&id=<?php echo $_GET['id'];?>",
+                url: "index.php?acra_page=filter.php&acra_hash=<?php echo $_GET['acra_hash'];?>",
                 dataType: "text",
                 data:'data='+JSON.stringify(filters)+'&sender='+select.id,
                 success: function (data) {
@@ -328,7 +331,7 @@ html_page_top2();
         function resetFilter(){
             jQuery.ajax({
                 type: "post",
-                url: "index.php?acra_page=filter.php&id=<?php echo $_GET['id'];?>",
+                url: "index.php?acra_page=filter.php&acra_hash=<?php echo $_GET['acra_hash'];?>",
                 dataType: "text",
                 data:"sender=reset",
                 success: function (data) {
@@ -441,7 +444,7 @@ html_page_top2();
     <div id="acra_dialog" style="display:none;">
 <?php foreach( $acra_issues as $issue){?>
         <div class="acra_popup" id="acra_<?php echo sprintf("%06d", $issue['id']);?>" style="display: none;">
-            <iframe class="acra_frame" src="index.php?acra_page=detail.php&amp;id=<?php echo $issue['id']; ?>">
+            <iframe class="acra_frame" src="index.php?acra_page=detail.php&acra_id=<?php echo $issue['id']; ?>">
             </iframe>
         </div>
 <?php } ?>

@@ -207,3 +207,14 @@ function acra_get_bug_ext_by_id($p_id){
 
     return $t_AcraBugExt;
 }
+
+function acra_get_fingerprint_by_bug_id($p_id){
+    $t_acra_issue_table = plugin_table("issue");
+    $query = "SELECT `report_fingerprint` FROM $t_acra_issue_table WHERE `issue_id` = '".$p_id."' ";
+    $result = db_query_bound( $query );
+    if( $result === false){
+        return false;
+    }
+    $result = db_fetch_array($result);
+    return $result['report_fingerprint'];
+}

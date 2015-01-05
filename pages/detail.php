@@ -77,7 +77,7 @@ header('X-Frame-Options:SAMEORIGIN');
 
 <body>
 <?php
-$id = gpc_get_string("id");
+$id = gpc_get_string("acra_id");
 $acra_bug_ext = acra_get_bug_ext_by_id($id);
 $t_bug = bug_get($acra_bug_ext->issue_id);
 ?>

@@ -31,10 +31,10 @@ function getFilterValue($filter_name)
 function getList($where, $what)
 {
     if (strlen($where) > 0) {
-        $where = "WHERE `report_fingerprint`='".$_GET['id']."' AND ".$where;
+        $where = "WHERE `report_fingerprint`='".$_GET['acra_hash']."' AND ".$where;
     }
     else{
-        $where = "WHERE `report_fingerprint`='".$_GET['id']."'";
+        $where = "WHERE `report_fingerprint`='".$_GET['acra_hash']."'";
     }
     $t_acra_issue_table = plugin_table("issue");
     $query = "SELECT `$what` FROM $t_acra_issue_table $where GROUP BY  `$what`";
