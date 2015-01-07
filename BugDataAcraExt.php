@@ -79,7 +79,6 @@ class BugDataAcraExt {
             $this->report_date, $this->install_date) );
 
         $this->id = db_insert_id( $t_issue_ext_table );
-
     }
 }
 
@@ -141,14 +140,24 @@ function acra_count_by_fingerprint($p_fingerprint){
 function acra_get_bug_id_by_fingerprint($p_fingerprint, $p_app_version){
     $t_acra_issue_table = plugin_table("issue");
     $query = "SELECT `issue_id`  FROM $t_acra_issue_table WHERE report_fingerprint = '".$p_fingerprint
-        ."' AND app_version = '".mysql_escape_string($p_app_version)."' ORDER BY `issue_id` ASC LIMIT 0,1";
+        ."' AND app_version = '".mysql_real_escape_string($p_app_version)."' ORDER BY `issue_id` ASC";
     $result = db_query_bound( $query );
-//    $result = db_fetch_array($result);
-    $result = db_result($result);
-    if( $result === false){
+    if( $result === false ){
         return false;
     }
-    return $result;
+    $count = 0;
+    $id = '';
+    while(true){
+        $row = db_fetch_array($result);
+        if( $row === false ){
+            break;
+        }
+        $count = $count + 1;
+        if( strcmp('0', $row['issue_id'])  !== 0 ){
+            $id = $row['issue_id'];
+        }
+    }
+    return array("id"=>$id, 'count'=>$count);
 }
 
 
@@ -217,4 +226,27 @@ function acra_get_fingerprint_by_bug_id($p_id){
     }
     $result = db_fetch_array($result);
     return $result['report_fingerprint'];
+}
+
+
+function acra_get_issue_id_by_report_id($p_report_id){
+    $t_acra_issue_table = plugin_table("issue");
+    $p_report_id = mysql_real_escape_string($p_report_id);
+    $query = "SELECT `id` FROM $t_acra_issue_table WHERE `report_id` = '".$p_report_id."' ";
+    $result = db_query_bound( $query );
+    if( $result === false){
+        return false;
+    }
+    $row = db_fetch_array($result);
+    if( $row === false ){
+        return false;
+    }
+    return $row['id'];
+}
+
+function acra_update_bug_id_by_fingerprint($p_fingerprint, $p_bug_id){
+    $t_acra_issue_table = plugin_table("issue");
+    $query = "UPDATE `$t_acra_issue_table` SET `issue_id` = '$p_bug_id' WHERE `report_fingerprint` = '$p_fingerprint'; ";
+    error_log($query);
+    $result = db_query_bound( $query );
 }
