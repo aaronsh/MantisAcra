@@ -16,7 +16,7 @@ function profile_exists( $p_platform, $p_os, $p_os_build ) {
     $query = "SELECT *
 				  FROM $t_user_profile_table
 				  WHERE $query_where
-				  ORDER BY platform, os, os_build";
+				  ORDER BY platform, os, os_build LIMIT 0,1";
     $result = db_query_bound( $query,  Array( $p_platform, $p_os, $p_os_build ) );
 
     $result = db_fetch_array($result);

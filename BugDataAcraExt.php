@@ -125,39 +125,43 @@ function acra_get_bug_ext_by_issue_id($p_issue){
     return $t_AcraBugExt;
 }
 
-function acra_count_by_fingerprint($p_fingerprint){
-    $t_acra_issue_table = plugin_table("issue");
-    $query = "SELECT COUNT(*) FROM $t_acra_issue_table WHERE report_fingerprint = '".$p_fingerprint."'";
-    $result = db_query_bound( $query );
-//    $result = db_fetch_array($result);
-    $result = db_result($result);
-    if( $result === false){
-        return false;
-    }
-    return $result;
-}
-
+/*
+ *  It returns the bug id by fingerprint
+ *  Returns:
+ *      > "0"  The associated bug exits and return value is the bug id of the associated bug
+ *      "0"  No associated bug being found and no associated bug is being proceed. The caller should save the bug immediately
+ *      "-1"  The associated bug is being proceed. The caller should wait and get the bug id later
+ */
 function acra_get_bug_id_by_fingerprint($p_fingerprint, $p_app_version){
     $t_acra_issue_table = plugin_table("issue");
-    $query = "SELECT `issue_id`  FROM $t_acra_issue_table WHERE report_fingerprint = '".$p_fingerprint
-        ."' AND app_version = '".mysql_real_escape_string($p_app_version)."' ORDER BY `issue_id` ASC";
+    $p_app_version = mysql_real_escape_string($p_app_version);
+    //get the associated bug id if it exist
+    $query = "SELECT `issue_id`  FROM $t_acra_issue_table WHERE report_fingerprint = '$p_fingerprint'
+        AND app_version = '$p_app_version' AND `issue_id` > 0 LIMIT 0, 1";
     $result = db_query_bound( $query );
     if( $result === false ){
         return false;
     }
-    $count = 0;
-    $id = '';
-    while(true){
-        $row = db_fetch_array($result);
-        if( $row === false ){
-            break;
-        }
-        $count = $count + 1;
-        if( strcmp('0', $row['issue_id'])  !== 0 ){
-            $id = $row['issue_id'];
-        }
+    $row = db_fetch_array($result);
+    if( $row !== false ){
+        return $row['issue_id'];
     }
-    return array("id"=>$id, 'count'=>$count);
+
+    //check how many url requests are waiting for the proceed of saving bug
+    $query = "SELECT count(*)  FROM $t_acra_issue_table WHERE report_fingerprint = '$p_fingerprint'
+        AND app_version = '$p_app_version' AND `issue_id` = 0 LIMIT 0, 2";
+    $result = db_query_bound( $query );
+    $row = db_fetch_array($result);
+    if( $row === false ){
+        return "-1";
+    }
+    $count = $row['count(*)'];
+    if( $count == '1' ){
+        return "0";
+    }
+    else{
+        return "-1";
+    }
 }
 
 
@@ -176,7 +180,7 @@ function acra_delete_bug_ext_by_bug_id($p_bug_id){
 
 function acra_get_bug_ext_by_id($p_id){
     $t_acra_issue_table = plugin_table("issue");
-    $query = "SELECT * FROM $t_acra_issue_table WHERE id = '".$p_id."' ";
+    $query = "SELECT * FROM $t_acra_issue_table WHERE id = '".$p_id."' LIMIT 0,1";
     $result = db_query_bound( $query );
     if( $result === false){
         return false;
@@ -219,7 +223,7 @@ function acra_get_bug_ext_by_id($p_id){
 
 function acra_get_fingerprint_by_bug_id($p_id){
     $t_acra_issue_table = plugin_table("issue");
-    $query = "SELECT `report_fingerprint` FROM $t_acra_issue_table WHERE `issue_id` = '".$p_id."' ";
+    $query = "SELECT `report_fingerprint` FROM $t_acra_issue_table WHERE `issue_id` = '".$p_id."' LIMIT 0, 1";
     $result = db_query_bound( $query );
     if( $result === false){
         return false;
@@ -232,7 +236,7 @@ function acra_get_fingerprint_by_bug_id($p_id){
 function acra_get_issue_id_by_report_id($p_report_id){
     $t_acra_issue_table = plugin_table("issue");
     $p_report_id = mysql_real_escape_string($p_report_id);
-    $query = "SELECT `id` FROM $t_acra_issue_table WHERE `report_id` = '".$p_report_id."' ";
+    $query = "SELECT `id` FROM $t_acra_issue_table WHERE `report_id` = '".$p_report_id."' LIMIT 0, 1";
     $result = db_query_bound( $query );
     if( $result === false){
         return false;
@@ -246,7 +250,7 @@ function acra_get_issue_id_by_report_id($p_report_id){
 
 function acra_update_bug_id_by_fingerprint($p_fingerprint, $p_bug_id){
     $t_acra_issue_table = plugin_table("issue");
-    $query = "UPDATE `$t_acra_issue_table` SET `issue_id` = '$p_bug_id' WHERE `report_fingerprint` = '$p_fingerprint'; ";
+    $query = "UPDATE `$t_acra_issue_table` SET `issue_id` = '$p_bug_id' WHERE `report_fingerprint` = '$p_fingerprint' AND `issue_id` = 0 ; ";
     error_log($query);
-    $result = db_query_bound( $query );
+    db_query_bound( $query );
 }

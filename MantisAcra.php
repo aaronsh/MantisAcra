@@ -187,7 +187,7 @@ class MantisAcraPlugin extends MantisPlugin {
             $pkg = gpc_get_string('PACKAGE_NAME');
 
             $t_acra_prj_table = plugin_table("project");
-            $query = "SELECT * FROM $t_acra_prj_table WHERE package_name = '".$pkg."'";
+            $query = "SELECT * FROM $t_acra_prj_table WHERE package_name = '".$pkg."' LIMIT 0, 1";
             $result = db_query_bound( $query );
             $result = db_fetch_array($result);
             if( $result === false){
@@ -205,7 +205,7 @@ class MantisAcraPlugin extends MantisPlugin {
         if( isset($p_param2) ){
             $t_acra_prj_table = plugin_table("project");
 
-            $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$p_param2 ;
+            $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = $p_param2 LIMIT 0, 1";
             $result = db_query_bound( $query );
             $result = db_fetch_array($result);
 
@@ -232,7 +232,7 @@ class MantisAcraPlugin extends MantisPlugin {
             $t_ver_data = version_get($p_ver_id);
 
             $t_acra_prj_table = plugin_table("project");
-            $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$t_ver_data->project_id;
+            $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$t_ver_data->project_id." LIMIT 0,1";
             $result = db_query_bound( $query );
             $result = db_fetch_array($result);
             $t_package_name = "";
@@ -260,7 +260,7 @@ class MantisAcraPlugin extends MantisPlugin {
             }
             $t_ver_data = version_get($p_arr);
             $t_acra_prj_table = plugin_table("project");
-            $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$t_ver_data->project_id;
+            $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$t_ver_data->project_id." LIMIT 0,1";
             $result = db_query_bound( $query );
             $result = db_fetch_array($result);
             $t_package_name = "";
@@ -281,7 +281,7 @@ class MantisAcraPlugin extends MantisPlugin {
             handle_mapping_file($_FILES['map_file']['tmp_name'], $file_name);
 
             $t_acra_ver_table = plugin_table("version");
-            $query = "SELECT * FROM $t_acra_ver_table WHERE `version_id` = ".$p_arr;
+            $query = "SELECT * FROM $t_acra_ver_table WHERE `version_id` = ".$p_arr." LIMIT 0,1";
             $result = db_query_bound( $query );
             $rows =$result->RowCount();
             $map = mysql_real_escape_string($file_name);
@@ -305,7 +305,7 @@ class MantisAcraPlugin extends MantisPlugin {
         $t_acra_prj_table = plugin_table("project");
         if( $t_acra_prj ){
             if(strlen($t_package) > 0 ){
-                $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$p_param2 ;
+                $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = ".$p_param2." LIMIT 0,2" ;
                 $result = db_query_bound( $query );
                 if( db_num_rows( $result ) > 0 ){
                     $t_query = "UPDATE $t_acra_prj_table SET `package_name` = '$t_package' WHERE `project_id` = $p_param2;";
@@ -529,21 +529,21 @@ class MantisAcraPlugin extends MantisPlugin {
         $acra_ext->install_date = $this->covertTimeString(gpc_get_string('USER_APP_START_DATE', ''));
         $acra_ext->create();
 
-        $t_duplicated_bug_id = false;
+        $t_duplicated_bug_id = '0';
         set_time_limit(45);
         $tries = 0;
         while($tries < 30 ) {
-            $result = acra_get_bug_id_by_fingerprint($t_fingerprint, $t_app_version);
-            error_log("acra_get_bug_id_by_fingerprint ".json_encode($result));
-            if( strcmp('0', $result['id']) !== 0 ){
-                $t_duplicated_bug_id = $result['id'];
-                break;
-            }
-            elseif( $result['count'] == 1 ){
-                break;
-            }
             sleep(1); //wait one second
+            $t_duplicated_bug_id = acra_get_bug_id_by_fingerprint($t_fingerprint, $t_app_version);
+            error_log("acra_get_bug_id_by_fingerprint ".$t_duplicated_bug_id);
             $tries = $tries + 1;
+            if( $t_duplicated_bug_id == "-1" ){
+                continue;
+            }
+            if( $t_duplicated_bug_id == '0' ){
+                break;
+            }
+            break;
         }
 
         if( $t_duplicated_bug_id === false ){
