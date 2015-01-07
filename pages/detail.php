@@ -83,7 +83,7 @@ $t_bug = bug_get($acra_bug_ext->issue_id);
 ?>
 
 <div class="ch-box-lite ch-box-error">
-    <h2>Bug ID:<?php echo $id; ?></h2>
+    <h2>Bug ID:<?php echo $acra_bug_ext->issue_id; ?></h2>
 </div>
     <table class="ch-datagrid" summary="">
         <thead>
@@ -146,7 +146,7 @@ $t_bug = bug_get($acra_bug_ext->issue_id);
 
             <div id="tab3-a" class="ch-hide">
                 <?php
-                $t_bug_crash_conf = bug_get_text_field($id, 'additional_information');
+                $t_bug_crash_conf = bug_get_text_field($acra_bug_ext->issue_id, 'additional_information');
                 $t_bug_crash_conf = htmlentities($t_bug_crash_conf);
                 echo str_replace("\n", "<br>\n", $t_bug_crash_conf);
                 ?>
