@@ -170,7 +170,6 @@ function acra_get_first_issue_id_by_fingerprint($p_fingerprint, $p_bug_id){
     //get the associated bug id if it exist
     $query = "SELECT `id`  FROM $t_acra_issue_table WHERE `report_fingerprint` = '$p_fingerprint'
         AND `issue_id`=$p_bug_id ORDER BY `id` ASC LIMIT 0, 1";
-    error_log($query);
     $result = db_query_bound( $query );
     if( $result === false ){
         return false;
@@ -269,6 +268,5 @@ function acra_get_issue_id_by_report_id($p_report_id){
 function acra_update_bug_id_by_fingerprint($p_fingerprint, $p_bug_id){
     $t_acra_issue_table = plugin_table("issue");
     $query = "UPDATE `$t_acra_issue_table` SET `issue_id` = '$p_bug_id' WHERE `report_fingerprint` = '$p_fingerprint' AND `issue_id` = 0 ; ";
-    error_log($query);
     db_query_bound( $query );
 }

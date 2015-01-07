@@ -136,28 +136,14 @@ class MantisAcraPlugin extends MantisPlugin
 
     function on_core_ready()
     {
+/*
         if (strcmp('manage_proj_ver_delete.php', $this->get_page_name()) === 0) {
 
         }
-
-        if (isset($_GET['acra_page'])) {
+*/
+        if (isset($_SESSION["acra_ext"]) && $_SESSION["acra_ext"] && isset($_GET['acra_page'])) {
             $t_php_file = "pages/" . $_GET['acra_page'];
             require($t_php_file);
-            exit;
-        }
-        if (isset($_SESSION["acra_ext"]) && $_SESSION["acra_ext"] && isset($_GET['acra_page'])) {
-
-            switch ($_GET['acra_page']) {
-                case 'check.php':
-                    require("pages/check.php");
-                    break;
-                case 'brief.php':
-                    require("pages/brief.php");
-                    break;
-                case 'detail.php':
-                    require("pages/detail.php");
-                    break;
-            }
             exit;
         }
         if (isset($_POST['data'])) {
@@ -309,7 +295,6 @@ class MantisAcraPlugin extends MantisPlugin
 
     function post_project_update($p_param1, $p_param2)
     {
-        error_log("post_project_update " . $p_param2);
         $t_acra_prj = gpc_get_bool('acra_project');
         $t_package = gpc_get_string('acra_package');
 
@@ -335,7 +320,6 @@ class MantisAcraPlugin extends MantisPlugin
 
     function attach_javascript()
     {
-        $_SESSION["acra_ext"] = true;
         if (isset($_GET['acra_page'])) {
             switch ($_GET['acra_page']) {
                 case 'test.php':
@@ -345,10 +329,12 @@ class MantisAcraPlugin extends MantisPlugin
             }
         }
         if ($this->show_acra_befrief_btn()) {
+            $_SESSION["acra_ext"] = true;
             $this->show_acra_brief_buttons_plugin();
             return;
         }
         if ($this->show_acra_detail_btn()) {
+            $_SESSION["acra_ext"] = true;
             $this->show_acra_detail_buttons_plugin();
             return;
         }

@@ -49,7 +49,6 @@ function update_bug_summary_by_version($t_version, $map_file)
         }
         $line = mysql_real_escape_string($line);
         $query = "UPDATE `$db_table` SET `summary` = '$line' WHERE `id` = $bug_id; ";
-        error_log($query);
         db_query_bound($query);
     }
 }
@@ -162,7 +161,7 @@ function get_stack_map($stacktrace)
 
 function get_restore_map($restore_file)
 {
-    if(!file_exists($file))	 
+    if(!file_exists($restore_file))
     {
     	return array();
     }
