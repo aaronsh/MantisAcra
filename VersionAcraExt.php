@@ -162,6 +162,10 @@ function get_stack_map($stacktrace)
 
 function get_restore_map($restore_file)
 {
+    if(!file_exists($file))	 
+    {
+    	return array();
+    }
     $map_content = file_get_contents($restore_file);
     $lines = explode("\n", $map_content);
     $map = array();

@@ -165,6 +165,24 @@ function acra_get_bug_id_by_fingerprint($p_fingerprint, $p_app_version){
 }
 
 
+function acra_get_first_issue_id_by_fingerprint($p_fingerprint, $p_bug_id){
+    $t_acra_issue_table = plugin_table("issue");
+    //get the associated bug id if it exist
+    $query = "SELECT `id`  FROM $t_acra_issue_table WHERE `report_fingerprint` = '$p_fingerprint'
+        AND `issue_id`=$p_bug_id ORDER BY `id` ASC LIMIT 0, 1";
+    error_log($query);
+    $result = db_query_bound( $query );
+    if( $result === false ){
+        return false;
+    }
+    $row = db_fetch_array($result);
+    if( $row !== false ){
+        return $row['id'];
+    }
+    return '0';
+}
+
+
 function acra_delete_bug_ext_by_bug_id($p_bug_id){
     $t_acra_issue_table = plugin_table("issue");
     $query = "DELETE FROM $t_acra_issue_table WHERE issue_id = '".$p_bug_id."'";
