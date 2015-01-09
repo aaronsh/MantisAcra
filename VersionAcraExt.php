@@ -34,19 +34,26 @@ function update_bug_summary_by_version($t_version, $map_file)
     foreach ($rows as $row) {
         $bug_id = $row['id'];
         $stacktrace = bug_get_text_field($bug_id, 'description');
-        $summary = get_crash_summary($stacktrace);
-        $line = $summary[0];
-        if (preg_match('/([^( ]+).*/', $line, $matches) === 1) {
-            $line = $matches[1];
+
+        $info = get_stack_map($stacktrace);
+        $exception = $info->exception;
+        $method = "";
+        $suffix = "";
+        $size = count($info->stack);
+        if( $size > 0 ){
+            $method = $info->stack[0]->method;
+            $suffix = $info->stack[0]->suffix;
         }
-        if (array_key_exists($line, $restore_map)) {
-            $line = $restore_map[$line];
+
+        if (array_key_exists($method, $restore_map)) {
+            $method = $restore_map[$method];
         }
-        if (strlen($summary[1]) > 0) {
-            $line = 'Acra report ' . $summary[1] . ' at ' . $line;
+        if (strlen($exception) > 0) {
+            $line = 'Acra report ' . $exception . ' at ' . $method.$suffix;
         } else {
-            $line = 'Acra report crash ' . $line;
+            $line = 'Acra report crash ' . $method.$suffix;
         }
+
         $line = mysql_real_escape_string($line);
         $query = "UPDATE `$db_table` SET `summary` = '$line' WHERE `id` = $bug_id; ";
         db_query_bound($query);
@@ -58,19 +65,25 @@ function get_bug_summary_by_version($t_version, $stacktrace)
     $restore_file = get_restore_file_by_version_name($t_version);
     $restore_map = get_restore_map($restore_file);
 
-    $summary = get_crash_summary($stacktrace);
-    $line = $summary[0];
-    if (preg_match('/([^( ]+).*/', $line, $matches) === 1) {
-        $line = $matches[1];
+    $info = get_stack_map($stacktrace);
+    $exception = $info->exception;
+    $method = "";
+    $suffix = "";
+    $size = count($info->stack);
+    if( $size > 0 ){
+        $method = $info->stack[0]->method;
+        $suffix = $info->stack[0]->suffix;
     }
-    if (array_key_exists($line, $restore_map)) {
-        $line = $restore_map[$line];
+
+    if (array_key_exists($method, $restore_map)) {
+        $method = $restore_map[$method];
     }
-    if (strlen($summary[1]) > 0) {
-        $line = 'Acra report ' . $summary[1] . ' at ' . $line;
+    if (strlen($exception) > 0) {
+        $line = 'Acra report ' . $exception . ' at ' . $method.$suffix;
     } else {
-        $line = 'Acra report crash ' . $line;
+        $line = 'Acra report crash ' . $method.$suffix;
     }
+
     return $line;
 }
 
@@ -121,15 +134,13 @@ function handle_mapping_file($map_file, $restore_file)
 
 function restore_stacktrace($stacktrace, $map_file)
 {
-    $stacks = get_stack_map($stacktrace);
+    $stack_info = get_stack_map($stacktrace);
+    $stack = $stack_info->stack;
     $restore_map = get_restore_map($map_file);
     $map = array();
-    foreach ($stacks[0] as $line) {
-        if (preg_match('/([^( ]+).*/', $line, $matches) === 1) {
-            $line = $matches[1];
-        }
-        if (array_key_exists($line, $restore_map)) {
-            $map[$line] = $restore_map[$line];
+    foreach ($stack as $info) {
+        if (array_key_exists($info->method, $restore_map)) {
+            $map[$info->method] = $restore_map[$info->method];
         }
     }
 
@@ -145,18 +156,25 @@ function get_stack_map($stacktrace)
         $stacktrace = explode("\n", $stacktrace);
     }
     $stack = array();
-    $empty_stack = true;
     $exception = '';
-    foreach (array_reverse($stacktrace) AS $line) {
-        if (preg_match('/\s+at\s+(\S+)/', $line, $matches) === 1) {
-            $stack[] = $matches[1];
-            $empty_stack = false;
-        } else if (!$empty_stack) {
-            $exception = trim($line);
-            break;
+    foreach ($stacktrace as $line) {
+        if (preg_match('/\s+at\s+([^(]+)(\S*)/', $line, $matches) === 1) {
+            $entry = new StdClass;
+            $entry->method = $matches[1];
+            $entry->suffix = $matches[2];
+            $stack[] = $entry;
+        }
+        else{
+            if( preg_match('/\S+Exception.*/', $line, $matches) === 1 ){
+                $exception = trim($line);
+                $stack = array();
+            }
         }
     }
-    return array($stack, $exception);
+    $decoded = new StdClass;
+    $decoded->exception = $exception;
+    $decoded->stack = $stack;
+    return $decoded;
 }
 
 function get_restore_map($restore_file)
@@ -177,12 +195,6 @@ function get_restore_map($restore_file)
     return $map;
 }
 
-function get_crash_summary($stack_trace)
-{
-    $info = get_stack_map($stack_trace);
-    $map = $info[0];
-    return array($map[count($map) - 1], $info[1]);
-}
 
 function get_restore_file_by_version_name($version){
     $ver_id = version_get_id($version);
