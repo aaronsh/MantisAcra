@@ -102,7 +102,7 @@ function handle_mapping_file($map_file, $restore_file)
             if (strpos($parts[0], " ") === 0) {
                 //class member, may method or field
                 if (preg_match("/([^: ]+)\\s+([^( ]+)(\\(\\S*\))/", $parts[0], $matches) === 1) {
-                    $mapped_method = trim($parts[1]);
+                    $mapped_method = $clzMapped.'.'.trim($parts[1]);
                     $origin_method = $clzOrig . '.' . $matches[2] . trim($matches[3]) . $matches[1];
                     if (array_key_exists($mapped_method, $map)) {
                         $line = $map[$mapped_method];
