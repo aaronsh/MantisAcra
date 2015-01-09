@@ -96,30 +96,27 @@ function handle_mapping_file($map_file, $restore_file)
     $clzMapped = '';
     $clzOrig = '';
     foreach ($arr as $line) {
-        if (strpos($line, " ") === 0) {
-            //member line
-            if (strpos($line, "(") !== false) {
-                //method map line
-                $parts = explode("->", $line);
-                $first = explode(" ", trim($parts[0]));
-                $mapped_method = $clzMapped . '.' . trim($parts[1]);
-                $return_type = str_replace("void", '', $first[0]);
-
-                $orgin_method = $clzOrig . '.' . $first[count($first) - 1] . $return_type;
-                if (array_key_exists($mapped_method, $map)) {
-                    $line = $map[$mapped_method];
-                    $map[$mapped_method] = $line . '; ' . $orgin_method;
-                } else {
-                    $map[$mapped_method] = $orgin_method;
+        $parts = explode("->", $line);
+        if( count($parts) === 2 ) {
+            //valid line
+            if (strpos($parts[0], " ") === 0) {
+                //class member, may method or field
+                if (preg_match("/([^: ]+)\\s+([^( ]+)(\\(\\S*\))/", $parts[0], $matches) === 1) {
+                    $mapped_method = trim($parts[1]);
+                    $origin_method = $clzOrig . '.' . $matches[2] . trim($matches[3]) . $matches[1];
+                    if (array_key_exists($mapped_method, $map)) {
+                        $line = $map[$mapped_method];
+                        $map[$mapped_method] = $line . '; ' . $origin_method;
+                    } else {
+                        $map[$mapped_method] = $origin_method;
+                    }
                 }
+            } else {
+                //class name
+                $clzMapped = str_replace(":", '', $parts[1]);
+                $clzMapped = trim($clzMapped);
+                $clzOrig = trim($parts[0]);
             }
-        } else {
-            //class line
-            $parts = explode("->", $line);
-            $line = $parts[1];
-            $clzMapped = str_replace(":", '', $line);
-            $clzMapped = trim($clzMapped);
-            $clzOrig = trim($parts[0]);
         }
     }
 
