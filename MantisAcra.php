@@ -567,6 +567,14 @@ class MantisAcraPlugin extends MantisPlugin
                 event_signal('EVENT_MANAGE_VERSION_CREATE', array($t_version_id));
             }
         }
+        else{
+            $t_bug = bug_get($id);
+            if( !($t_bug->status == RESOLVED || $t_bug->status == CLOSED
+                || $t_bug->resolution == FIXED || $t_bug->resolution == DUPLICATE || $t_bug->resolution == NOT_FIXABLE) ){
+                //refresh bug update time
+                bug_update_date($t_duplicated_bug_id);
+            }
+        }
         acra_update_bug_id_by_fingerprint($t_fingerprint, $t_duplicated_bug_id);
     }
 
