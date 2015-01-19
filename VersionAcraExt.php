@@ -172,17 +172,15 @@ function get_stack_map($stacktrace)
     $stack = array();
     $exception = '';
     foreach ($stacktrace as $line) {
-        if (preg_match('/\s+at\s+([^(]+)(\S*)/', $line, $matches) === 1) {
+        if( preg_match('/^\S+.*/', $line, $matches) === 1 ){
+            $exception = trim($line);
+            $stack = array();
+        }
+        else if (preg_match('/^\s+at\s+([^(]+)(\S*)/', $line, $matches) === 1) {
             $entry = new StdClass;
             $entry->method = $matches[1];
             $entry->suffix = $matches[2];
             $stack[] = $entry;
-        }
-        else{
-            if( preg_match('/\S+Exception.*/', $line, $matches) === 1 ){
-                $exception = trim($line);
-                $stack = array();
-            }
         }
     }
     $decoded = new StdClass;

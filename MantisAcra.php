@@ -608,6 +608,7 @@ class MantisAcraPlugin extends MantisPlugin
         $acra_ext->install_date = $this->covertTimeString(gpc_get_string('USER_APP_START_DATE', ''));
         $acra_ext->create();
 
+        error_log("save fingerprint ".$acra_ext->report_fingerprint." to acra issue:".$acra_ext->id);
         $t_duplicated_bug_id = '0';
         set_time_limit(60);
         $tries = 0;
@@ -632,10 +633,11 @@ class MantisAcraPlugin extends MantisPlugin
             $t_duplicated_bug_id = '0';
         }
 
+        $t_user_id = $this->get_user_id();
         if ($t_duplicated_bug_id == '0') {
             //new crash report, save a bug record
-            $t_user_id = $this->get_user_id();
             $t_duplicated_bug_id = $this->save_bug($t_project_id, $t_user_id);
+            error_log("save bug ".$t_duplicated_bug_id);
             //create version if possible
             $t_version_id = version_get_id($t_app_version, $t_project_id);
             if ($t_version_id === false) {
@@ -644,18 +646,22 @@ class MantisAcraPlugin extends MantisPlugin
             }
         }
         else{
-            $t_bug = bug_get($t_duplicated_bug_id);
-            //we do NOT save the crash report of CLOSED issue now
-            if( $t_bug->status != CLOSED ) {
-                if( $t_bug->get_bugnotes_count() < 20 ) { //we only accepts 20 crash records as notes for the reason of the speed of viewing bug detail page.
-                    bugnote_add($t_duplicated_bug_id, gpc_get_string('STACK_TRACE'), '0:00', false, BUGNOTE, $acra_ext->id);
+            error_log("exists bug ".$t_duplicated_bug_id);
+            if( !bug_is_closed($t_duplicated_bug_id) ) { //the bug is open
+                $t_notes = bugnote_get_all_bugnotes($t_duplicated_bug_id);
+                if( count($t_notes) < 20 ) { //we only accepts 20 crash records as notes for the reason of the speed of viewing bug detail page.
+                    error_log("acra issue is:".$acra_ext->id);
+                    $note_id = bugnote_add($t_duplicated_bug_id, gpc_get_string('STACK_TRACE'), '0:00', false, BUGNOTE, $acra_ext->id, $t_user_id, false, false );
+                    error_log("add note ".$note_id);
                 }
                 else{
                     bug_update_date($t_duplicated_bug_id);
+                    error_log("update bug time, not add note");
                 }
             }
             else{ //the bug is closed, do not accept crash report any more
                 acra_delete_bug_ext_by_id($acra_ext->id);
+                error_log("delete the acra issue because the bug is closed");
             }
             /*
             if( !($t_bug->status == RESOLVED || $t_bug->status == CLOSED
@@ -665,6 +671,7 @@ class MantisAcraPlugin extends MantisPlugin
             }
             */
         }
+        error_log("update bug id of acra issues which fingerprint is ".$t_fingerprint);
         acra_update_bug_id_by_fingerprint($t_fingerprint, $t_duplicated_bug_id);
     }
 
@@ -861,11 +868,41 @@ class MantisAcraPlugin extends MantisPlugin
         $parts = explode(" ", $decoded->exception);
         $lines[] = $parts[0];
 
+        $android_packages = array(
+            "android.app",
+            "android.content",
+            "android.database",
+            "android.graphics",
+            "android.location",
+            "android.media",
+            "android.net",
+            "android.os",
+            "android.opengl",
+            "android.provider",
+            "android.telephony",
+            "android.view",
+            "android.util",
+            "android.webkit",
+            "android.widget");
         foreach($decoded->stack as $entry){
+            $method = $entry->method;
+            if( strpos($method, "android.") === 0 ) {
+                foreach ($android_packages as $sys) {
+                    if (strpos($method, $sys) === 0) {
+                        error_log("sys method, skip " . $method);
+                        $method = null;
+                    }
+                }
+            }
+            if( $method === null ){
+                break;
+            }
             $lines[] = $entry->method.$entry->suffix;
         }
 
         $contents = implode("\n", $lines);
+        error_log("stack trace:".$stack_trace);
+        error_log("fingerprint_text:".$contents);
         return md5($contents);
     }
 
