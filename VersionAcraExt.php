@@ -176,7 +176,7 @@ function get_stack_map($stacktrace)
             $exception = trim($line);
             $stack = array();
         }
-        else if (preg_match('/^\s+at\s+([^(]+)(\S*)/', $line, $matches) === 1) {
+        else if (preg_match('/^\s+at\s+([^(]+)(.*)/', $line, $matches) === 1) {
             $entry = new StdClass;
             $entry->method = $matches[1];
             $entry->suffix = $matches[2];
