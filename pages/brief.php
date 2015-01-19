@@ -145,7 +145,7 @@ header('X-Frame-Options:SAMEORIGIN');
                 <?php
                 $t_bug_text = bug_get_text_field($id, 'description');
                 $t_restore_file = get_restore_file_by_version_name($t_bug->version);
-                $t_bug_text = restore_stacktrace($t_bug_text, $t_restore_file);
+                $t_bug_text = restore_stacktrace_by_file($t_bug_text, $t_restore_file);
                 $t_bug_text = htmlentities($t_bug_text);
                 $t_bug_text = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $t_bug_text);
                 echo str_replace("\n", "<br>\n", $t_bug_text);

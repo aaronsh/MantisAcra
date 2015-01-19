@@ -415,17 +415,66 @@ class MantisAcraPlugin extends MantisPlugin
 
     function show_acra_detail_buttons_plugin()
     {
+        $id = gpc_get_string("id", '');
+        $t_bug = bug_get($id);
+        $t_bug_text = bug_get_text_field($id, 'description');
+        $t_restore_file = get_restore_file_by_version_name($t_bug->version);
+        $restore_map = get_restore_map($t_restore_file);
         ?>
+        <script type="text/javascript" src="<?php echo plugin_file("fancyBox/fancybox.js"); ?>"></script>
+        <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>"
+              media="screen"/>
+        <style type="text/css">
+            .acra_popup {
+                width: 800px;
+                height: 400px;
+                display: none;
+                padding: 0px;
+            }
+
+            .acra_frame {
+                width: 100%;
+                height: 100%;
+            }
+        </style>
         <div id="restored_stacktrace" style="display:none">
             <?php
-            $id = gpc_get_string("id", '');
-            $t_bug = bug_get($id);
-            $t_bug_text = bug_get_text_field($id, 'description');
-            $t_restore_file = get_restore_file_by_version_name($t_bug->version);
-            $t_bug_text = restore_stacktrace($t_bug_text, $t_restore_file);
+            $t_bug_text = restore_stacktrace_by_map($t_bug_text, $restore_map);
             $t_bug_text = htmlentities($t_bug_text);
             $t_bug_text = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $t_bug_text);
             echo str_replace("\n", "<br>\n", $t_bug_text);
+            ?>
+        </div>
+        <div id="restored_notes" style="display:none">
+            <?php
+            $bugnotes = bugnote_get_all_bugnotes($id);
+            foreach ($bugnotes as $note) {
+                echo '<div id="n';
+                echo $note->id;
+                echo '">';
+                $t_bug_text = restore_stacktrace_by_map($note->note, $restore_map);
+                $t_bug_text = htmlentities($t_bug_text);
+                $t_bug_text = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $t_bug_text);
+                echo str_replace("\n", "<br>\n", $t_bug_text);
+
+                echo '</div>';
+            }
+            ?>
+        </div>
+
+        <div id="acra_dialog" style="display:none">
+            <?php
+            foreach ($bugnotes as $note) {
+                if( strlen($note->note_attr) > 0 ) {
+                    echo '<div class="acra_popup" id="acra_';
+                    echo sprintf("%06d", $note->note_attr);
+                    echo '" style="display: none;">';
+                    echo '<iframe class="acra_frame" src="index.php?acra_page=detail.php&acra_id=';
+                    echo sprintf("%06d", $note->note_attr);
+                    echo '"></iframe></div>';
+                    echo "\r\n";
+                }
+            }
             ?>
         </div>
         <script>
@@ -442,6 +491,31 @@ class MantisAcraPlugin extends MantisPlugin
                 }
             }
 
+            //update notes
+            var noteRow, noteCells, noteTextCell, restoredNoteHtml, acraDetailLink;
+            <?php
+             foreach ($bugnotes as $note) {
+            ?>
+                noteRow = document.getElementById('c<?php echo $note->id; ?>');
+                noteCells = noteRow.getElementsByClassName("bugnote-note-public");
+                noteTextCell = noteCells[0];
+                restoredNoteHtml = document.getElementById('n<?php echo $note->id; ?>');
+                noteTextCell.innerHTML = restoredNoteHtml.innerHTML;
+
+                <?php
+                if( strlen($note->note_attr) ) {
+                ?>
+                acraDetailLink = document.createElement("div");
+                acraDetailLink.innerHTML = '<a class="fancybox" href="#acra_<?php echo sprintf("%06d", $note->note_attr);?>" class="button-small">Acra Detail</a>';
+                noteRow.firstElementChild.lastElementChild.appendChild(acraDetailLink);
+                <?php
+                }
+                ?>
+
+            <?php
+             }
+            ?>
+
             var cells = jQuery("td");
             var reg = new RegExp(/^\s*ID\s*$/);
             var idCell = null;
@@ -456,6 +530,8 @@ class MantisAcraPlugin extends MantisPlugin
                 var shorts = idCell.parentElement.previousElementSibling.firstElementChild;
                 jQuery(shorts).append('<span class="bracket-link">[&nbsp;<a href="index.php?acra_page=test.php&acra_id=<?php echo gpc_get_string("id");?>">View ACRA more info</a>&nbsp;]</span>');
             }
+
+            jQuery('.fancybox').fancybox();
         </script>
     <?php
     }
@@ -568,12 +644,26 @@ class MantisAcraPlugin extends MantisPlugin
             }
         }
         else{
-            $t_bug = bug_get($id);
+            $t_bug = bug_get($t_duplicated_bug_id);
+            //we do NOT save the crash report of CLOSED issue now
+            if( $t_bug->status != CLOSED ) {
+                if( $t_bug->get_bugnotes_count() < 20 ) { //we only accepts 20 crash records as notes for the reason of the speed of viewing bug detail page.
+                    bugnote_add($t_duplicated_bug_id, gpc_get_string('STACK_TRACE'), '0:00', false, BUGNOTE, $acra_ext->id);
+                }
+                else{
+                    bug_update_date($t_duplicated_bug_id);
+                }
+            }
+            else{ //the bug is closed, do not accept crash report any more
+                acra_delete_bug_ext_by_id($acra_ext->id);
+            }
+            /*
             if( !($t_bug->status == RESOLVED || $t_bug->status == CLOSED
                 || $t_bug->resolution == FIXED || $t_bug->resolution == DUPLICATE || $t_bug->resolution == NOT_FIXABLE) ){
                 //refresh bug update time
                 bug_update_date($t_duplicated_bug_id);
             }
+            */
         }
         acra_update_bug_id_by_fingerprint($t_fingerprint, $t_duplicated_bug_id);
     }
@@ -766,16 +856,17 @@ class MantisAcraPlugin extends MantisPlugin
 
     function build_acra_issue_fingerprint($stack_trace, $package)
     {
-        /*
-                $lines = explode("\n", $stack_trace);
-                $value = "";
-                foreach ($lines as $id => $line) {
-                    if (strpos($line, $package) !== false) {
-                        $value = $value . $line;
-                    }
-                }
-        */
-        return md5($stack_trace);
+        $decoded = get_stack_map($stack_trace);
+        $lines = array();
+        $parts = explode(" ", $decoded->exception);
+        $lines[] = $parts[0];
+
+        foreach($decoded->stack as $entry){
+            $lines[] = $entry->method.$entry->suffix;
+        }
+
+        $contents = implode("\n", $lines);
+        return md5($contents);
     }
 
 

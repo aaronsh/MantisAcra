@@ -129,11 +129,28 @@ function handle_mapping_file($map_file, $restore_file)
     file_put_contents($restore_file, join("\r\n", $lines));
 }
 
-function restore_stacktrace($stacktrace, $map_file)
+function restore_stacktrace_by_file($stacktrace, $map_file)
 {
     $stack_info = get_stack_map($stacktrace);
     $stack = $stack_info->stack;
     $restore_map = get_restore_map($map_file);
+    $map = array();
+    foreach ($stack as $info) {
+        if (array_key_exists($info->method, $restore_map)) {
+            $map[$info->method] = $restore_map[$info->method];
+        }
+    }
+
+    foreach ($map as $key => $value) {
+        $stacktrace = str_replace($key, $value, $stacktrace);
+    }
+    return $stacktrace;
+}
+
+function restore_stacktrace_by_map($stacktrace, $restore_map)
+{
+    $stack_info = get_stack_map($stacktrace);
+    $stack = $stack_info->stack;
     $map = array();
     foreach ($stack as $info) {
         if (array_key_exists($info->method, $restore_map)) {

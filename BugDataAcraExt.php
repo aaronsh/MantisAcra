@@ -194,6 +194,18 @@ function acra_delete_bug_ext_by_bug_id($p_bug_id){
     return $result;
 }
 
+function acra_delete_bug_ext_by_id($p_id){
+    $t_acra_issue_table = plugin_table("issue");
+    $query = "DELETE FROM $t_acra_issue_table WHERE `id` = '".$p_id."'";
+    $result = db_query_bound( $query );
+    if( $result === false){
+        return false;
+    }
+    $result = db_result($result);
+
+    return $result;
+}
+
 
 function acra_get_bug_ext_by_id($p_id){
     $t_acra_issue_table = plugin_table("issue");
