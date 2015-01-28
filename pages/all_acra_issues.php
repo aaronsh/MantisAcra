@@ -272,9 +272,11 @@
     var string_loading = 'Loading...';
     // -->
 </script>
-<script type="text/javascript" src="/mantis/javascript/min/xmlhttprequest.js"></script>
-<script type="text/javascript" src="/mantis/javascript/min/addLoadEvent.js"></script>
-<script type="text/javascript" src="/mantis/javascript/min/dynamic_filters.js"></script>
+<?php
+html_javascript_link( 'xmlhttprequest.js');
+html_javascript_link( 'addLoadEvent.js');
+html_javascript_link( 'dynamic_filters.js');
+?>
 <br />
 <form name="bug_action" method="get" action="bug_actiongroup_page.php">
     <table id="buglist" class="width100" cellspacing="1">

@@ -349,16 +349,12 @@ html_page_top2();
                 }
             });
         }
-
-
-
     </script>
-    <script type="text/javascript" src="/mantis/javascript/min/xmlhttprequest.js">
-    </script>
-    <script type="text/javascript" src="/mantis/javascript/min/addLoadEvent.js">
-    </script>
-    <script type="text/javascript" src="/mantis/javascript/min/dynamic_filters.js">
-    </script>
+<?php
+html_javascript_link( 'xmlhttprequest.js');
+html_javascript_link( 'addLoadEvent.js');
+html_javascript_link( 'dynamic_filters.js');
+?>
     <br />
 
     <form name="bug_action" method="get" action="bug_actiongroup_page.php">
@@ -401,12 +397,13 @@ html_page_top2();
         <td colspan="11">
         </td>
     </tr>
+    <?php $img = plugin_file( 'acra_logo.png' );?>
     <?php foreach( $acra_issues as $issue){?>
     <tr bgcolor="#fcbdbd" border="1" valign="top">
         <td>
             <input type="checkbox" name="bug_arr[]" value="201" />
         </td>
-        <td><?php echo $issue['id']; ?>&nbsp;<a class="fancybox" href="#acra_<?php echo sprintf("%06d", $issue['id']);?>" "><img border="0" width="18" height="16" src="/mantis/plugin_file.php?file=MantisAcra/acra_logo.png" alt="Acra" title="Acra"></a></td>
+        <td><?php echo $issue['id']; ?>&nbsp;<a class="fancybox" href="#acra_<?php echo sprintf("%06d", $issue['id']);?>" "><img border="0" width="18" height="16" src="<?php echo $img;?>" alt="Acra" title="Acra"></a></td>
         <td><?php echo $issue['phone_brand']; ?></td>
         <td><?php echo $issue['android_version']; ?></td>
         <td class="center"><?php echo $issue['phone_model']; ?></td>
