@@ -569,7 +569,7 @@ class MantisAcraPlugin extends MantisPlugin
         }
         $t_app_version = gpc_get_string('APP_VERSION_NAME', '');
         $t_project_id = $p_project_id;
-        $t_fingerprint = $this->build_acra_issue_fingerprint(gpc_get_string('STACK_TRACE'), gpc_get_string('PACKAGE_NAME'));
+        $t_fingerprint = $this->build_acra_issue_fingerprint(gpc_get_string('STACK_TRACE'), $t_app_version);
 
         //save acra issue extionsion
         $acra_ext = new BugDataAcraExt;
@@ -861,7 +861,7 @@ class MantisAcraPlugin extends MantisPlugin
         return $result;
     }
 
-    function build_acra_issue_fingerprint($stack_trace, $package)
+    function build_acra_issue_fingerprint($stack_trace, $version)
     {
         $decoded = get_stack_map($stack_trace);
         $lines = array();
