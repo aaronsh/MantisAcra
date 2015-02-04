@@ -22,7 +22,6 @@ header('X-Frame-Options:SAMEORIGIN');
 
     </style>
     <script src="<?php echo plugin_file('jquery.js');?>"></script>
-    <script src="/mantis/plugin_file.php?file=MantisAcra/jquery.js"></script>
     <link rel="stylesheet" href="<?php echo plugin_file('chico.css');?>">
     <style>
         /**
