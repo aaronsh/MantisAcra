@@ -60,7 +60,8 @@ class MantisAcraPlugin extends MantisPlugin
         $schema[] = array("CreateTableSQL", array(plugin_table("project"), "
   id 		 I  NOTNULL PRIMARY AUTO,
   project_id 		 I  NOTNULL DEFAULT '0',
-  package_name      C(128) NOTNULL DEFAULT \" '' \"
+  package_name      C(128) NOTNULL DEFAULT \" '' \",
+  packages      X
 ", Array('mysql' => 'ENGINE=MyISAM DEFAULT CHARSET=utf8', 'pgsql' => 'WITHOUT OIDS')));
 
         $schema[] = array("CreateTableSQL", array(plugin_table("version"), "
@@ -146,34 +147,7 @@ class MantisAcraPlugin extends MantisPlugin
             require($t_php_file);
             exit;
         }
-        if (isset($_POST['data'])) {
-            $data = $_POST['data'];
-            $ts = substr($data, 0, 16);
-            $data = substr($data, 16);
-            $data = trim($data);
-            $key = md5($ts);
-            $key = substr($key, 0, 8);
 
-            $des = hex2bin($data);
-
-            $cipher = MCRYPT_DES; //密码类型
-            $modes = MCRYPT_MODE_ECB; //密码模式
-            $iv = mcrypt_create_iv(mcrypt_get_iv_size($cipher, $modes), MCRYPT_RAND);//初始化向量
-            $str_decrypt = mcrypt_decrypt($cipher, $key, $des, $modes, $iv); //解密函数
-            $str_decrypt = trim($str_decrypt);
-            //echo $str_decrypt;
-
-            $data = json_decode($str_decrypt, true);
-            //var_dump($data);
-            if ($data != null) {
-                $_GET['acra'] = true;
-                $keys = array_keys($data);
-                foreach ($keys as $key) {
-                    $_GET[$key] = $data[$key];
-                }
-            }
-            //var_dump($_GET);
-        }
         if (isset($_GET['acra']) && $_GET['acra'] == 'true') {
             $pkg = gpc_get_string('PACKAGE_NAME');
 
@@ -185,8 +159,9 @@ class MantisAcraPlugin extends MantisPlugin
                 return;
             }
             $prj_id = $result['project_id'];
+            $packages = $result['packages'];
 
-            $this->save_acra_issue($prj_id);
+            $this->save_acra_issue($prj_id, $packages);
             exit;
         }
     }
@@ -202,8 +177,10 @@ class MantisAcraPlugin extends MantisPlugin
             $result = db_fetch_array($result);
 
             $t_package_name = "";
+            $t_packages = "";
             if ($result !== false && is_array($result)) {
                 $t_package_name = $result['package_name'];
+                $t_packages = $result['packages'];
             }
         }
         ?>
@@ -212,11 +189,30 @@ class MantisAcraPlugin extends MantisPlugin
                 Acra Option
             </td>
             <td>
-                <span><input type="checkbox" name="acra_project" <?php if (strlen($t_package_name) > 0) {
+                <span><input type="checkbox" name="acra_project"  onclick="toggleAcraOption(this)" <?php if (strlen($t_package_name) > 0) {
                         echo 'checked="checked"';
                     } ?> >Is Acra Project</span>&nbsp;
-                <span style="padding-left: 30px;">Package:<input type="text" name="acra_package" size="60"
-                                                                 maxlength="128" value="<?php echo $t_package_name; ?>"></span>
+                <div id="acra_option">
+                    <div>
+                        <div style="float:left; width:180px;"> Package of application: </div>
+                        <input type="text" name="acra_package" size="60" maxlength="128" value="<?php echo $t_package_name; ?>">
+                    </div>
+                    <div style="padding-top:10px;">
+                        <div style="float:left; width:180px;">Packages in application:</div>
+                        <textarea name="packages" cols="62" rows="6"><?php echo $t_packages;?></textarea>
+                    </div>
+                </div>
+                <script type="text/javascript">
+                    function toggleAcraOption(checkBox){
+                        var e = document.getElementById('acra_option');
+                        if( checkBox.checked){
+                            e.style.display='block';
+                        }
+                        else{
+                            e.style.display='none';
+                        }
+                    }
+                </script>
             </td>
         </tr>
     <?php
@@ -296,7 +292,8 @@ class MantisAcraPlugin extends MantisPlugin
     function post_project_update($p_param1, $p_param2)
     {
         $t_acra_prj = gpc_get_bool('acra_project');
-        $t_package = gpc_get_string('acra_package');
+        $t_package = mysql_real_escape_string(gpc_get_string('acra_package'));
+        $t_packages = mysql_real_escape_string(gpc_get_string('packages'));
 
         $t_acra_prj_table = plugin_table("project");
         if ($t_acra_prj) {
@@ -304,10 +301,10 @@ class MantisAcraPlugin extends MantisPlugin
                 $query = "SELECT * FROM $t_acra_prj_table WHERE project_id = " . $p_param2 . " LIMIT 0,2";
                 $result = db_query_bound($query);
                 if (db_num_rows($result) > 0) {
-                    $t_query = "UPDATE $t_acra_prj_table SET `package_name` = '$t_package' WHERE `project_id` = $p_param2;";
+                    $t_query = "UPDATE $t_acra_prj_table SET `package_name` = '$t_package', `packages`='$t_packages' WHERE `project_id` = $p_param2;";
 
                 } else {
-                    $t_query = "INSERT INTO $t_acra_prj_table ( package_name, project_id) VALUES ('$t_package', $p_param2 )";
+                    $t_query = "INSERT INTO $t_acra_prj_table ( package_name, project_id, packages) VALUES ('$t_package', $p_param2, $t_packages )";
                 }
             } else {
                 return;
@@ -415,8 +412,10 @@ class MantisAcraPlugin extends MantisPlugin
 
     function show_acra_detail_buttons_plugin()
     {
+        require("ProjectAcraExt.php");
         $id = gpc_get_string("id", '');
         $t_bug = bug_get($id);
+        $packages = get_project_package_list($t_bug->project_id);
         $t_bug_text = bug_get_text_field($id, 'description');
         $t_restore_file = get_restore_file_by_version_name($t_bug->version);
         $restore_map = get_restore_map($t_restore_file);
@@ -441,6 +440,11 @@ class MantisAcraPlugin extends MantisPlugin
             <?php
             $t_bug_text = restore_stacktrace_by_map($t_bug_text, $restore_map);
             $t_bug_text = htmlentities($t_bug_text);
+            foreach($packages as $pack=>$len){
+                $reg = str_replace(".", "\\.", $pack);
+                $reg = "/^(\\s+at\\s+)".$reg."(.*)$/m";
+                $t_bug_text = preg_replace($reg, "$1<b>$pack$2</b>", $t_bug_text);
+            }
             $t_bug_text = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $t_bug_text);
             echo str_replace("\n", "<br>\n", $t_bug_text);
             ?>
@@ -454,6 +458,11 @@ class MantisAcraPlugin extends MantisPlugin
                 echo '">';
                 $t_bug_text = restore_stacktrace_by_map($note->note, $restore_map);
                 $t_bug_text = htmlentities($t_bug_text);
+                foreach($packages as $pack=>$len){
+                    $reg = str_replace(".", "\\.", $pack);
+                    $reg = "/^(\\s+at\\s+)".$reg."(.*)$/m";
+                    $t_bug_text = preg_replace($reg, "$1<b>$pack$2</b>", $t_bug_text);
+                }
                 $t_bug_text = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $t_bug_text);
                 echo str_replace("\n", "<br>\n", $t_bug_text);
 
@@ -562,14 +571,14 @@ class MantisAcraPlugin extends MantisPlugin
     }
 
 
-    function save_acra_issue($p_project_id)
+    function save_acra_issue($p_project_id, $packages)
     {
         if (acra_get_issue_id_by_report_id(gpc_get_string('REPORT_ID', '')) !== false) {
             return;
         }
         $t_app_version = gpc_get_string('APP_VERSION_NAME', '');
         $t_project_id = $p_project_id;
-        $t_fingerprint = $this->build_acra_issue_fingerprint(gpc_get_string('STACK_TRACE'), $t_app_version);
+        $t_fingerprint = $this->build_acra_issue_fingerprint(gpc_get_string('STACK_TRACE'), $packages);
 
         //save acra issue extionsion
         $acra_ext = new BugDataAcraExt;
@@ -861,43 +870,24 @@ class MantisAcraPlugin extends MantisPlugin
         return $result;
     }
 
-    function build_acra_issue_fingerprint($stack_trace, $version)
+    function build_acra_issue_fingerprint($stack_trace, $packages)
     {
         $decoded = get_stack_map($stack_trace);
         $lines = array();
         $parts = explode(" ", $decoded->exception);
         $lines[] = $parts[0];
 
-        $android_packages = array(
-            "android.app",
-            "android.content",
-            "android.database",
-            "android.graphics",
-            "android.location",
-            "android.media",
-            "android.net",
-            "android.os",
-            "android.opengl",
-            "android.provider",
-            "android.telephony",
-            "android.view",
-            "android.util",
-            "android.webkit",
-            "android.widget");
+        require("ProjectAcraExt.php");
+        $app_packages = handle_project_package_list($packages);
+
         foreach($decoded->stack as $entry){
             $method = $entry->method;
-            if( strpos($method, "android.") === 0 ) {
-                foreach ($android_packages as $sys) {
-                    if (strpos($method, $sys) === 0) {
-                        error_log("sys method, skip " . $method);
-                        $method = null;
-                    }
+            foreach($app_packages as $pack=> $len){
+                if( strncmp($method, $pack, $len) === 0 ){
+                    $lines[] = $entry->method.$entry->suffix;
+                    break;
                 }
             }
-            if( $method === null ){
-                break;
-            }
-            $lines[] = $entry->method.$entry->suffix;
         }
 
         $contents = implode("\n", $lines);
