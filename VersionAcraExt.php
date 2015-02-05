@@ -120,6 +120,9 @@ function get_bug_summary_by_version($t_version, $stacktrace, $project_id)
 
 function build_summary_text($exception, $method){
     $prefix = 'Acra report ';
+    if( strlen($method) === 0 ){
+        return $prefix.$exception;
+    }
     if( (strlen($prefix) + strlen($exception) + strlen($method)) > 128 ){
         $parts = explode(":", $exception);
         return $prefix.$parts[0].' at '.$method;
