@@ -124,7 +124,7 @@ function build_summary_text($exception, $method){
         $parts = explode(":", $exception);
         return $prefix.$parts[0].' at '.$method;
     }
-    return $prefix.$exception.$method;
+    return $prefix.$exception.' at '.$method;
 }
 
 function handle_mapping_file($map_file, $restore_file)
