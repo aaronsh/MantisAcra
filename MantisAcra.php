@@ -589,6 +589,7 @@ class MantisAcraPlugin extends MantisPlugin
             if( bug_is_closed($t_bug_id) ){
                 error_log("the bug is closed");
                 error_log("save_acra_issue quit2 ".(microtime(true)-$begin_ts).'ms');
+                return;
             }
         }
 
