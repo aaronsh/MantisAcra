@@ -19,7 +19,7 @@ function create_map_file_folder($Folder)
 function update_bug_summary_by_version($t_version, $map_file)
 {
     $db_table = db_get_table('mantis_bug_table');
-    $query = "SELECT `id`, `summary` FROM $db_table WHERE `version` = '" . mysql_real_escape_string($t_version) . "'";
+    $query = "SELECT `id`, `summary`, `project_id` FROM $db_table WHERE `version` = '" . mysql_real_escape_string($t_version) . "'";
     $result = db_query_bound($query);
     $rows = array();
     while (true) {
@@ -29,6 +29,13 @@ function update_bug_summary_by_version($t_version, $map_file)
         }
         $rows[] = $row;
     }
+
+    if( count($rows) === 0 ){
+        return;
+    }
+
+    require_once("ProjectAcraExt.php");
+    $app_packages = get_project_package_list($rows[0]['project_id']);
 
     $restore_map = get_restore_map($map_file);
     foreach ($rows as $row) {
@@ -41,15 +48,26 @@ function update_bug_summary_by_version($t_version, $map_file)
         $suffix = "";
         $size = count($info->stack);
         if( $size > 0 ){
-            $method = $info->stack[0]->method;
-            $suffix = $info->stack[0]->suffix;
+            foreach($info->stack as $entry){
+                $func = $entry->method;
+                foreach($app_packages as $pack=> $len){
+                    if( strncmp($func, $pack, $len) === 0 ){
+                        $method = $entry->method;
+                        $suffix = $entry->suffix;
+                        break;
+                    }
+                }
+                if( strlen($method) > 0 ){
+                    break;
+                }
+            }
         }
 
         if (array_key_exists($method, $restore_map)) {
             $method = $restore_map[$method];
         }
         if (strlen($exception) > 0) {
-            $line = 'Acra report ' . $exception . ' at ' . $method.$suffix;
+            $line = build_summary_text($exception, $method.$suffix);
         } else {
             $line = 'Acra report crash ' . $method.$suffix;
         }
@@ -60,7 +78,7 @@ function update_bug_summary_by_version($t_version, $map_file)
     }
 }
 
-function get_bug_summary_by_version($t_version, $stacktrace)
+function get_bug_summary_by_version($t_version, $stacktrace, $project_id)
 {
     $restore_file = get_restore_file_by_version_name($t_version);
     $restore_map = get_restore_map($restore_file);
@@ -71,20 +89,42 @@ function get_bug_summary_by_version($t_version, $stacktrace)
     $suffix = "";
     $size = count($info->stack);
     if( $size > 0 ){
-        $method = $info->stack[0]->method;
-        $suffix = $info->stack[0]->suffix;
+        require_once("ProjectAcraExt.php");
+        $app_packages = get_project_package_list($project_id);
+        foreach($info->stack as $entry){
+            $func = $entry->method;
+            foreach($app_packages as $pack=> $len){
+                if( strncmp($func, $pack, $len) === 0 ){
+                    $method = $entry->method;
+                    $suffix = $entry->suffix;
+                    break;
+                }
+            }
+            if( strlen($method) > 0 ){
+                break;
+            }
+        }
     }
 
     if (array_key_exists($method, $restore_map)) {
         $method = $restore_map[$method];
     }
     if (strlen($exception) > 0) {
-        $line = 'Acra report ' . $exception . ' at ' . $method.$suffix;
+        $line = build_summary_text($exception, $method.$suffix);
     } else {
         $line = 'Acra report crash ' . $method.$suffix;
     }
 
     return $line;
+}
+
+function build_summary_text($exception, $method){
+    $prefix = 'Acra report ';
+    if( (strlen($prefix) + strlen($exception) + strlen($method)) > 128 ){
+        $parts = explode(":", $exception);
+        return $prefix.$parts[0].' at '.$method;
+    }
+    return $prefix.$exception.$method;
 }
 
 function handle_mapping_file($map_file, $restore_file)
