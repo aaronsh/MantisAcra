@@ -143,7 +143,7 @@ class MantisAcraPlugin extends MantisPlugin
         }
 */
         if( isset($_GET['sam']) ){
-            update_bug_summary_by_version('1.7.0 20140126', '');
+            update_bug_summary_by_version('1.7.0 20150202', '');
             $stacktrace = bug_get_text_field('31', 'description');
             echo  str_replace("\n", "<br>", $stacktrace);
             echo '<br>';
