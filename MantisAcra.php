@@ -142,14 +142,6 @@ class MantisAcraPlugin extends MantisPlugin
 
         }
 */
-        if( isset($_GET['sam']) ){
-            update_bug_summary_by_version('1.7.0 20150202', '');
-            $stacktrace = bug_get_text_field('31', 'description');
-            echo  str_replace("\n", "<br>", $stacktrace);
-            echo '<br>';
-            echo get_bug_summary_by_version('1.7.0 20150202', $stacktrace, '1');
-            exit;
-        }
         if (isset($_SESSION["acra_ext"]) && $_SESSION["acra_ext"] && isset($_GET['acra_page'])) {
             $t_php_file = "pages/" . $_GET['acra_page'];
             require($t_php_file);
@@ -581,6 +573,7 @@ class MantisAcraPlugin extends MantisPlugin
 
     function save_acra_issue($p_project_id, $packages)
     {
+        $begin_ts = microtime(true);
         set_time_limit(0);
         error_log("save_acra_issue reset timeout");
         if (acra_get_issue_id_by_report_id(gpc_get_string('REPORT_ID', '')) !== false) {
@@ -589,6 +582,15 @@ class MantisAcraPlugin extends MantisPlugin
         $t_app_version = gpc_get_string('APP_VERSION_NAME', '');
         $t_project_id = $p_project_id;
         $t_fingerprint = $this->build_acra_issue_fingerprint(gpc_get_string('STACK_TRACE'), $packages);
+
+        $t_bug_id = acra_get_bug_id_by_fingerprint($t_fingerprint, $t_app_version);
+        if( $t_bug_id != false && $t_bug_id != '0' && $t_bug_id != '-1' ){
+            //the bug id is valid
+            if( bug_is_closed($t_bug_id) ){
+                error_log("the bug is closed");
+                error_log("save_acra_issue quit2 ".(microtime(true)-$begin_ts).'ms');
+            }
+        }
 
         //save acra issue extionsion
         $acra_ext = new BugDataAcraExt;
@@ -680,7 +682,7 @@ class MantisAcraPlugin extends MantisPlugin
             else{ //the bug is closed, do not accept crash report any more
                 acra_delete_bug_ext_by_id($acra_ext->id);
                 error_log("delete the acra issue because the bug is closed");
-                error_log("save_acra_issue quit1");
+                error_log("save_acra_issue quit1 ".(microtime(true)-$begin_ts).'ms');
                 return;
             }
             /*
@@ -693,7 +695,7 @@ class MantisAcraPlugin extends MantisPlugin
         }
         error_log("update bug id of acra issues which fingerprint is ".$t_fingerprint);
         acra_update_bug_id_by_fingerprint($t_fingerprint, $t_duplicated_bug_id);
-        error_log("save_acra_issue quit");
+        error_log("save_acra_issue quit".(microtime(true)-$begin_ts).'ms');
     }
 
     function save_bug($p_project_id, $p_user_id)
