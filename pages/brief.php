@@ -23,6 +23,7 @@ header('X-Frame-Options:SAMEORIGIN');
     </style>
     <script src="<?php echo plugin_file('jquery.js');?>"></script>
     <link rel="stylesheet" href="<?php echo plugin_file('chico.css');?>">
+    <script type="text/javascript" src="<?php echo plugin_file("acra_view_bug.js"); ?>"></script>
     <style>
         /**
          * Carousel demo
@@ -142,22 +143,7 @@ header('X-Frame-Options:SAMEORIGIN');
         </ul>
         <div class="ch-box-lite">
             <div id="tab1-a">
-                <?php
-                $t_bug_text = bug_get_text_field($id, 'description');
-                $t_restore_file = get_restore_file_by_version_name($t_bug->version);
-                $t_bug_text = restore_stacktrace_by_file($t_bug_text, $t_restore_file);
-                $t_bug_text = htmlentities($t_bug_text);
-                $packages = get_project_package_list($t_bug->project_id);
-                foreach($packages as $pack=>$len){
-                    $reg = str_replace(".", "\\.", $pack);
-                    $reg = "/^(\\s+at\\s+)".$reg."(.*)$/m";
-                    $t_bug_text = preg_replace($reg, "$1<b>$pack$2</b>", $t_bug_text);
-                }
-                $t_bug_text = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $t_bug_text);
-                echo str_replace("\n", "<br>\n", $t_bug_text);
-                ?>
             </div>
-
             <div id="tab2-a" class="ch-hide">
                 <?php
                 $t_bug_logcat = bug_get_text_field($id, 'steps_to_reproduce');
@@ -187,7 +173,16 @@ header('X-Frame-Options:SAMEORIGIN');
 <script src="<?php echo plugin_file('chico.js');?>"></script>
 <script>
     // Tabs
+    <?php
+    $t_bug_text = bug_get_text_field($id, 'description');
+    $t_restore_file = get_restore_file_by_version_name($t_bug->version);
+    $t_bug_text = restore_stacktrace_by_file($t_bug_text, $t_restore_file);
+    $packages = get_project_package_list($t_bug->project_id);
+    ?>
     var tabs = $(".YOUR_SELECTOR_Tabs").tabs();
+    var div = document.getElementById('tab1-a');
+    var packages = <?php echo json_encode(array_keys($packages));?>;
+    div.innerHTML = acra_buildStacktraceDiv("<?php echo str_replace("\n", "\\n", $t_bug_text);?>", packages);
 </script>
 </body>
 </html>

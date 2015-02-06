@@ -419,7 +419,13 @@ class MantisAcraPlugin extends MantisPlugin
         $t_bug_text = bug_get_text_field($id, 'description');
         $t_restore_file = get_restore_file_by_version_name($t_bug->version);
         $restore_map = get_restore_map($t_restore_file);
+        $restore_map['cn.emoney.frag.FragStockChoose.initNormalChooser'] = 'cn.emoney.quote.CBlockF10New.initBlock()void; cn.emoney.quote.CBlockF10New.SetGoods(com.emoney.data.quote.CGoods)void; cn.emoney.quote.CBlockF10New.setBlock(cn.emoney.frag.FragQuote)void; cn.emoney.quote.CBlockF10New.onRequestJsonDataSuccess$62ef52f4(android.os.Bundle)void; cn.emoney.quote.CBlockF10New.access$400(cn.emoney.quote.CBlockF10New)cn.emoney.quote.CBlockF10New$ListItem[]; cn.emoney.quote.CBlockF10New.access$700(cn.emoney.quote.CBlockF10New,boolean)void';
+        $t_bug_text = restore_stacktrace_by_map($t_bug_text, $restore_map);
+        $bugnotes = bugnote_get_all_bugnotes($id);
         ?>
+        <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("chico.css"); ?>"
+        <script type="text/javascript" src="<?php echo plugin_file("chico.js"); ?>"></script>
+        <script type="text/javascript" src="<?php echo plugin_file("acra_view_bug.js"); ?>"></script>
         <script type="text/javascript" src="<?php echo plugin_file("fancyBox/fancybox.js"); ?>"></script>
         <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>"
               media="screen"/>
@@ -436,41 +442,6 @@ class MantisAcraPlugin extends MantisPlugin
                 height: 100%;
             }
         </style>
-        <div id="restored_stacktrace" style="display:none">
-            <?php
-            $t_bug_text = restore_stacktrace_by_map($t_bug_text, $restore_map);
-            $t_bug_text = htmlentities($t_bug_text);
-            foreach($packages as $pack=>$len){
-                $reg = str_replace(".", "\\.", $pack);
-                $reg = "/^(\\s+at\\s+)".$reg."(.*)$/m";
-                $t_bug_text = preg_replace($reg, "$1<b>$pack$2</b>", $t_bug_text);
-            }
-            $t_bug_text = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $t_bug_text);
-            echo str_replace("\n", "<br>\n", $t_bug_text);
-            ?>
-        </div>
-        <div id="restored_notes" style="display:none">
-            <?php
-            $bugnotes = bugnote_get_all_bugnotes($id);
-            foreach ($bugnotes as $note) {
-                echo '<div id="n';
-                echo $note->id;
-                echo '">';
-                $t_bug_text = restore_stacktrace_by_map($note->note, $restore_map);
-                $t_bug_text = htmlentities($t_bug_text);
-                foreach($packages as $pack=>$len){
-                    $reg = str_replace(".", "\\.", $pack);
-                    $reg = "/^(\\s+at\\s+)".$reg."(.*)$/m";
-                    $t_bug_text = preg_replace($reg, "$1<b>$pack$2</b>", $t_bug_text);
-                }
-                $t_bug_text = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $t_bug_text);
-                echo str_replace("\n", "<br>\n", $t_bug_text);
-
-                echo '</div>';
-            }
-            ?>
-        </div>
-
         <div id="acra_dialog" style="display:none">
             <?php
             foreach ($bugnotes as $note) {
@@ -488,14 +459,14 @@ class MantisAcraPlugin extends MantisPlugin
         </div>
         <script>
             //update stack trace
+            var packages = <?php echo json_encode(array_keys($packages));?>;
             var list = jQuery(".category");
             for (var i = 0; i < list.length; i++) {
                 var e = list[i];
                 var txt = e.innerText;
                 if ("Description" == txt) {
                     e = e.nextSibling;
-                    d = document.getElementById('restored_stacktrace')
-                    e.innerHTML = d.innerHTML;
+                    e.innerHTML = acra_buildStacktraceDiv("<?php echo str_replace("\n", "\\n", $t_bug_text);?>", packages);
                     break;
                 }
             }
@@ -504,17 +475,18 @@ class MantisAcraPlugin extends MantisPlugin
             var noteRow, noteCells, noteTextCell, restoredNoteHtml, acraDetailLink;
             <?php
              foreach ($bugnotes as $note) {
+                $t_bug_text = restore_stacktrace_by_map($note->note, $restore_map);
+                $t_bug_text =str_replace("\n", "\\n", $t_bug_text);
             ?>
-                noteRow = document.getElementById('c<?php echo $note->id; ?>');
+noteRow = document.getElementById('c<?php echo $note->id; ?>');
                 noteCells = noteRow.getElementsByClassName("bugnote-note-public");
                 noteTextCell = noteCells[0];
-                restoredNoteHtml = document.getElementById('n<?php echo $note->id; ?>');
-                noteTextCell.innerHTML = restoredNoteHtml.innerHTML;
+                noteTextCell.innerHTML = acra_buildStacktraceDiv("<?php echo $t_bug_text;?>", packages);
 
                 <?php
                 if( strlen($note->note_attr) ) {
                 ?>
-                acraDetailLink = document.createElement("div");
+        acraDetailLink = document.createElement("div");
                 acraDetailLink.innerHTML = '<a class="fancybox" href="#acra_<?php echo sprintf("%06d", $note->note_attr);?>" class="button-small">Acra Detail</a>';
                 noteRow.firstElementChild.lastElementChild.appendChild(acraDetailLink);
                 <?php

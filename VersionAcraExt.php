@@ -184,8 +184,9 @@ function restore_stacktrace_by_file($stacktrace, $map_file)
         }
     }
 
+    $map['cn.emoney.frag.FragStockChoose.initNormalChooser'] = 'cn.emoney.quote.CBlockF10New.initBlock()void; cn.emoney.quote.CBlockF10New.SetGoods(com.emoney.data.quote.CGoods)void; cn.emoney.quote.CBlockF10New.setBlock(cn.emoney.frag.FragQuote)void; cn.emoney.quote.CBlockF10New.onRequestJsonDataSuccess$62ef52f4(android.os.Bundle)void; cn.emoney.quote.CBlockF10New.access$400(cn.emoney.quote.CBlockF10New)cn.emoney.quote.CBlockF10New$ListItem[]; cn.emoney.quote.CBlockF10New.access$700(cn.emoney.quote.CBlockF10New,boolean)void';
     foreach ($map as $key => $value) {
-        $stacktrace = str_replace($key, $value, $stacktrace);
+        $stacktrace = str_replace($key, $key.'{'.$value.'}', $stacktrace);
     }
     return $stacktrace;
 }
@@ -202,7 +203,7 @@ function restore_stacktrace_by_map($stacktrace, $restore_map)
     }
 
     foreach ($map as $key => $value) {
-        $stacktrace = str_replace($key, $value, $stacktrace);
+        $stacktrace = str_replace($key, $key.'{'.$value.'}', $stacktrace);
     }
     return $stacktrace;
 }
