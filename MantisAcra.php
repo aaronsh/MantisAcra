@@ -575,10 +575,10 @@ class MantisAcraPlugin extends MantisPlugin
     {
         $begin_ts = microtime(true);
         set_time_limit(0);
-        error_log("save_acra_issue reset timeout");
         if (acra_get_issue_id_by_report_id(gpc_get_string('REPORT_ID', '')) !== false) {
             return;
         }
+        error_log("save_acra_issue enter");
         $t_app_version = gpc_get_string('APP_VERSION_NAME', '');
         $t_project_id = $p_project_id;
         $t_fingerprint = $this->build_acra_issue_fingerprint(gpc_get_string('STACK_TRACE'), $packages);
@@ -696,7 +696,7 @@ class MantisAcraPlugin extends MantisPlugin
         }
         error_log("update bug id of acra issues which fingerprint is ".$t_fingerprint);
         acra_update_bug_id_by_fingerprint($t_fingerprint, $t_duplicated_bug_id);
-        error_log("save_acra_issue quit".(microtime(true)-$begin_ts).'ms');
+        error_log("save_acra_issue quit0 ".(microtime(true)-$begin_ts).'ms');
     }
 
     function save_bug($p_project_id, $p_user_id)
