@@ -137,6 +137,7 @@ class MantisAcraPlugin extends MantisPlugin
 
     function on_core_ready()
     {
+/*
         if( isset($_GET['sam']) ){
             //update all summaries
             $t_bug_text_table = db_get_table('mantis_bug_text_table');
@@ -163,6 +164,7 @@ class MantisAcraPlugin extends MantisPlugin
                 }
             }
         }
+*/
 /*
         if (strcmp('manage_proj_ver_delete.php', $this->get_page_name()) === 0) {
 
