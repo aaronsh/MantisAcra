@@ -494,7 +494,7 @@ class MantisAcraPlugin extends MantisPlugin
                 var txt = e.innerText;
                 if ("Description" == txt) {
                     e = e.nextSibling;
-                    e.innerHTML = acra_buildStacktraceDiv("<?php echo str_replace("\n", "\\n", $t_bug_text);?>", packages);
+                    e.innerHTML = acra_buildStacktraceDiv(<?php echo json_encode($t_bug_text);?>, packages);
                     break;
                 }
             }
@@ -504,7 +504,7 @@ class MantisAcraPlugin extends MantisPlugin
             <?php
              foreach ($bugnotes as $note) {
                 $t_bug_text = restore_stacktrace_by_map($note->note, $restore_map);
-                $t_bug_text =str_replace("\n", "\\n", $t_bug_text);
+                $t_bug_text =json_encode( $t_bug_text);
             ?>
 noteRow = document.getElementById('c<?php echo $note->id; ?>');
                 noteCells = noteRow.getElementsByClassName("bugnote-note-public");

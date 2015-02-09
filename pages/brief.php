@@ -183,7 +183,7 @@ header('X-Frame-Options:SAMEORIGIN');
     var tabs = $(".YOUR_SELECTOR_Tabs").tabs();
     var div = document.getElementById('tab1-a');
     var packages = <?php echo json_encode(array_keys($packages));?>;
-    var stacktrace = "<?php echo str_replace("\n", "\\n", $t_bug_text);?>";
+    var stacktrace = "<?php echo json_encode( $t_bug_text);?>";
     div.innerHTML = acra_buildStacktraceDiv(stacktrace, packages);
 </script>
 </body>
