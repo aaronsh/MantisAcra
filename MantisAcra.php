@@ -137,6 +137,32 @@ class MantisAcraPlugin extends MantisPlugin
 
     function on_core_ready()
     {
+        if( isset($_GET['sam']) ){
+            //update all summaries
+            $t_bug_text_table = db_get_table('mantis_bug_text_table');
+            $t_bug_table = db_get_table( 'mantis_bug_table' );
+
+            $query = "SELECT `id`, `bug_text_id`,`project_id` FROM `$t_bug_table`";
+
+            $result = db_query_bound( $query, Array() );
+            $bug_count = db_num_rows( $result );
+
+            $t_bug_id       = 0;
+
+            for ($i=0;$i<$bug_count;$i++) {
+                $row = db_fetch_array( $result );
+                $t_bug_id = $row['id'];
+                $t_bug_text_id = $row['bug_text_id'];
+                $t_prj_id = $row['project_id'];
+                $query_get_desc = "SELECT `description` FROM `$t_bug_text_table` where `id` = $t_bug_text_id";
+                $desc_result = db_query_bound($query_get_desc);
+                $t_description = db_fetch_array($desc_result);
+                if( $t_description !== false ){
+                    $t_description = get_bug_summary_by_version('', $t_description['description'], $t_prj_id );
+                    db_query_bound("UPDATE `$t_bug_table` SET `summary`=".db_param() ." WHERE `id` =".db_param() , array($t_description, $t_bug_id));
+                }
+            }
+        }
 /*
         if (strcmp('manage_proj_ver_delete.php', $this->get_page_name()) === 0) {
 
@@ -419,7 +445,6 @@ class MantisAcraPlugin extends MantisPlugin
         $t_bug_text = bug_get_text_field($id, 'description');
         $t_restore_file = get_restore_file_by_version_name($t_bug->version);
         $restore_map = get_restore_map($t_restore_file);
-        $restore_map['cn.emoney.frag.FragStockChoose.initNormalChooser'] = 'cn.emoney.quote.CBlockF10New.initBlock()void; cn.emoney.quote.CBlockF10New.SetGoods(com.emoney.data.quote.CGoods)void; cn.emoney.quote.CBlockF10New.setBlock(cn.emoney.frag.FragQuote)void; cn.emoney.quote.CBlockF10New.onRequestJsonDataSuccess$62ef52f4(android.os.Bundle)void; cn.emoney.quote.CBlockF10New.access$400(cn.emoney.quote.CBlockF10New)cn.emoney.quote.CBlockF10New$ListItem[]; cn.emoney.quote.CBlockF10New.access$700(cn.emoney.quote.CBlockF10New,boolean)void';
         $t_bug_text = restore_stacktrace_by_map($t_bug_text, $restore_map);
         $t_bug_text = str_replace("\r", "", $t_bug_text);
         $bugnotes = bugnote_get_all_bugnotes($id);

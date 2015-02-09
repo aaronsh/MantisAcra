@@ -37,7 +37,6 @@ function update_bug_summary_by_version($t_version, $map_file)
     require_once("ProjectAcraExt.php");
     $app_packages = get_project_package_list($rows[0]['project_id']);
 
-    $restore_map = get_restore_map($map_file);
     foreach ($rows as $row) {
         $bug_id = $row['id'];
         $stacktrace = bug_get_text_field($bug_id, 'description');
@@ -63,9 +62,6 @@ function update_bug_summary_by_version($t_version, $map_file)
             }
         }
 
-        if (array_key_exists($method, $restore_map)) {
-            $method = $restore_map[$method];
-        }
         if (strlen($exception) > 0) {
             $line = build_summary_text($exception, $method.$suffix);
         } else {
@@ -80,9 +76,6 @@ function update_bug_summary_by_version($t_version, $map_file)
 
 function get_bug_summary_by_version($t_version, $stacktrace, $project_id)
 {
-    $restore_file = get_restore_file_by_version_name($t_version);
-    $restore_map = get_restore_map($restore_file);
-
     $info = get_stack_map($stacktrace);
     $exception = $info->exception;
     $method = "";
@@ -106,9 +99,6 @@ function get_bug_summary_by_version($t_version, $stacktrace, $project_id)
         }
     }
 
-    if (array_key_exists($method, $restore_map)) {
-        $method = $restore_map[$method];
-    }
     if (strlen($exception) > 0) {
         $line = build_summary_text($exception, $method.$suffix);
     } else {
@@ -184,7 +174,6 @@ function restore_stacktrace_by_file($stacktrace, $map_file)
         }
     }
 
-    $map['cn.emoney.frag.FragStockChoose.initNormalChooser'] = 'cn.emoney.quote.CBlockF10New.initBlock()void; cn.emoney.quote.CBlockF10New.SetGoods(com.emoney.data.quote.CGoods)void; cn.emoney.quote.CBlockF10New.setBlock(cn.emoney.frag.FragQuote)void; cn.emoney.quote.CBlockF10New.onRequestJsonDataSuccess$62ef52f4(android.os.Bundle)void; cn.emoney.quote.CBlockF10New.access$400(cn.emoney.quote.CBlockF10New)cn.emoney.quote.CBlockF10New$ListItem[]; cn.emoney.quote.CBlockF10New.access$700(cn.emoney.quote.CBlockF10New,boolean)void';
     foreach ($map as $key => $value) {
         $stacktrace = str_replace($key, $key.'{'.$value.'}', $stacktrace);
     }
