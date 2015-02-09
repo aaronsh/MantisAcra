@@ -421,10 +421,11 @@ class MantisAcraPlugin extends MantisPlugin
         $restore_map = get_restore_map($t_restore_file);
         $restore_map['cn.emoney.frag.FragStockChoose.initNormalChooser'] = 'cn.emoney.quote.CBlockF10New.initBlock()void; cn.emoney.quote.CBlockF10New.SetGoods(com.emoney.data.quote.CGoods)void; cn.emoney.quote.CBlockF10New.setBlock(cn.emoney.frag.FragQuote)void; cn.emoney.quote.CBlockF10New.onRequestJsonDataSuccess$62ef52f4(android.os.Bundle)void; cn.emoney.quote.CBlockF10New.access$400(cn.emoney.quote.CBlockF10New)cn.emoney.quote.CBlockF10New$ListItem[]; cn.emoney.quote.CBlockF10New.access$700(cn.emoney.quote.CBlockF10New,boolean)void';
         $t_bug_text = restore_stacktrace_by_map($t_bug_text, $restore_map);
+        $t_bug_text = str_replace("\r", "", $t_bug_text);
         $bugnotes = bugnote_get_all_bugnotes($id);
         ?>
-        <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("chico.css"); ?>"
-        <script type="text/javascript" src="<?php echo plugin_file("chico.js"); ?>"></script>
+        <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("chico.css"); ?>" />
+        <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("acra_view_bug.css"); ?>" />
         <script type="text/javascript" src="<?php echo plugin_file("acra_view_bug.js"); ?>"></script>
         <script type="text/javascript" src="<?php echo plugin_file("fancyBox/fancybox.js"); ?>"></script>
         <link rel="stylesheet" type="text/css" href="<?php echo plugin_file("fancyBox/fancybox.css"); ?>"

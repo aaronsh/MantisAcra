@@ -164,7 +164,7 @@ header('X-Frame-Options:SAMEORIGIN');
                 <?php
                 $t_bug_phone_build = $acra_bug_ext->phone_build;
                 $t_bug_phone_build = htmlentities($t_bug_phone_build);
-                echo str_replace("\n", "<br>\n", $t_bug_phone_build);
+                echo str_replace("\n", "<br/>\n", $t_bug_phone_build);
                 ?>
             </div>
         </div>
@@ -177,12 +177,14 @@ header('X-Frame-Options:SAMEORIGIN');
     $t_bug_text = bug_get_text_field($id, 'description');
     $t_restore_file = get_restore_file_by_version_name($t_bug->version);
     $t_bug_text = restore_stacktrace_by_file($t_bug_text, $t_restore_file);
+    $t_bug_text = str_replace("\r", "", $t_bug_text);
     $packages = get_project_package_list($t_bug->project_id);
     ?>
     var tabs = $(".YOUR_SELECTOR_Tabs").tabs();
     var div = document.getElementById('tab1-a');
     var packages = <?php echo json_encode(array_keys($packages));?>;
-    div.innerHTML = acra_buildStacktraceDiv("<?php echo str_replace("\n", "\\n", $t_bug_text);?>", packages);
+    var stacktrace = "<?php echo str_replace("\n", "\\n", $t_bug_text);?>";
+    div.innerHTML = acra_buildStacktraceDiv(stacktrace, packages);
 </script>
 </body>
 </html>

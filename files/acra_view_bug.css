@@ -1,0 +1,25 @@
+
+.acra_stacktrace {
+    padding:10px;
+}
+
+
+.acra_stack{
+    padding-left:30px;
+}
+
+.acra_restored{
+    margin-left: 50px;
+}
+
+.acra_type{
+    color:#940054;
+}
+
+.acra_param_divider{
+    color:darkgray;
+}
+
+.acra_src_line{
+    color:#0035df;
+}
