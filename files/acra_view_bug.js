@@ -75,14 +75,14 @@ function acra_highlight_by_package(line, packages){
 }
 
 function acra_buildStacktraceDiv(stacktrace, packages){
-    var html = "<div class=\"acra_stacktrace\">";
-    html = html + '<div class="ch-box-icon ch-box-warn" onclick="acra_toggleRestoredDiv(this); "> <i class="ch-icon-zoom-in"></i><span>Show restore message</span></div>';
+    var showOption = false;
+    var content = '';
     var lines = stacktrace.split("\n");
     for(var i=0; i<lines.length; i++){
         var restore = "";
         var line = lines[i];
-        if( line.indexOf('{') >= 0 ){
-            var matches = line.match(/([^{]+){([^\}]+)}(.*)/);
+        if( line.indexOf('<~~') >= 0 && line.indexOf('~~>') >= 0 ){
+            var matches = line.match(/(.*)<~~(.*)~~>(.*)/);
             if( matches != null){
                 line = matches[1] + matches[3];
                 restore = matches[2];
@@ -90,10 +90,11 @@ function acra_buildStacktraceDiv(stacktrace, packages){
         }
         line = acra_highlight_by_package(line, packages);
         line = line.replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
-        html = html + line;
-        html = html + "<br>";
+        content = content + line;
+        content = content + "<br>";
         if( restore.length > 0 ){
-            html = html + "<div class=\"acra_restored ch-box-lite\" style=\"display: none;\">";
+            showOption = true;
+            content = content + "<div class=\"acra_restored ch-box-lite\" style=\"display: none;\">";
             var restore_lines = restore.split(";");
             for(var j=0; j<restore_lines.length; j++){
                 var restore_line = restore_lines[j];
@@ -103,12 +104,18 @@ function acra_buildStacktraceDiv(stacktrace, packages){
                 var shortName = partsOfName[partsOfName.length -1];
                 fullName = fullName.replace(shortName, "<b>"+shortName+"</b>");;
                 var method = acra_handleParams(restore_parts[3]) + " " + fullName + "(" +acra_handleParams(restore_parts[2]) + ")";
-                html = html + method;
-                html = html + "<br>";
+                content = content + method;
+                content = content + "<br>";
             }
-            html = html + "</div>";
+            content = content + "</div>";
         }
     }
+
+    var html = "<div class=\"acra_stacktrace\">";
+    if( showOption ){
+        html = html + '<div class="ch-box-icon ch-box-warn" onclick="acra_toggleRestoredDiv(this); "> <i class="ch-icon-zoom-in"></i><span>Show restore message</span></div>';
+    }
+    html = html + content;
     html = html + "</div>"
     return html;
 }

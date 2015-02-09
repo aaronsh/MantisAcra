@@ -175,7 +175,7 @@ function restore_stacktrace_by_file($stacktrace, $map_file)
     }
 
     foreach ($map as $key => $value) {
-        $stacktrace = str_replace($key, $key.'{'.$value.'}', $stacktrace);
+        $stacktrace = str_replace($key, $key.'<~~'.$value.'~~>', $stacktrace);
     }
     return $stacktrace;
 }
@@ -192,7 +192,7 @@ function restore_stacktrace_by_map($stacktrace, $restore_map)
     }
 
     foreach ($map as $key => $value) {
-        $stacktrace = str_replace($key, $key.'{'.$value.'}', $stacktrace);
+        $stacktrace = str_replace($key, $key.'<~~'.$value.'~~>', $stacktrace);
     }
     return $stacktrace;
 }
