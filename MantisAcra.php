@@ -509,7 +509,7 @@ class MantisAcraPlugin extends MantisPlugin
 noteRow = document.getElementById('c<?php echo $note->id; ?>');
                 noteCells = noteRow.getElementsByClassName("bugnote-note-public");
                 noteTextCell = noteCells[0];
-                noteTextCell.innerHTML = acra_buildStacktraceDiv("<?php echo $t_bug_text;?>", packages);
+                noteTextCell.innerHTML = acra_buildStacktraceDiv(<?php echo $t_bug_text;?>, packages);
 
                 <?php
                 if( strlen($note->note_attr) ) {
