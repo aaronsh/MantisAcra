@@ -206,7 +206,9 @@ function get_stack_map($stacktrace)
     $exception = '';
     foreach ($stacktrace as $line) {
         if( preg_match('/^\S+.*/', $line, $matches) === 1 ){
-            $exception = trim($line);
+            if( strlen($exception) == 0 ) { //treat first exception as main exception
+                $exception = trim($line);
+            }
             $stack = array();
         }
         else if (preg_match('/^\s+at\s+([^(]+)(.*)/', $line, $matches) === 1) {
