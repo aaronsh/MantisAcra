@@ -68,7 +68,11 @@ class BugDataAcraExt {
 					      " . db_param() . ',' . db_param() . ',' . db_param() . ',' . db_param() . ",
 					      " . 'now()' . ',' . db_param() . ')';
 
-        db_query_bound( $query, Array( $this->project_id, $this->issue_id, $this->report_id, $this->report_fingerprint,
+        $t_display_errors = config_get_global('display_errors');
+        $t_on_error_handler = $t_display_errors[E_USER_ERROR];
+        $t_display_errors[E_USER_ERROR] = "none";
+        config_set_global('display_errors', $t_display_errors);
+        $t_result = db_query_bound( $query, Array( $this->project_id, $this->issue_id, $this->report_id, $this->report_fingerprint,
             $this->file_path, $this->phone_model, $this->phone_build, $this->phone_brand,
             $this->product_name, $this->total_mem_size, $this->available_mem_size, $this->custom_data,
             $this->initial_configuration, $this->crash_configuration, $this->display, $this->user_comment,
@@ -77,8 +81,13 @@ class BugDataAcraExt {
             $this->device_features, $this->environment, $this->settings_system, $this->settings_secure,
             $this->shared_preferences, $this->android_version, $this->app_version, $this->crash_date.
             $this->report_date, $this->install_date) );
-
+        $t_display_errors[E_USER_ERROR] = $t_on_error_handler;
+        config_set_global('display_errors', $t_display_errors);
+        if( $t_result === false ){
+            return false;
+        }
         $this->id = db_insert_id( $t_issue_ext_table );
+        return true;
     }
 }
 

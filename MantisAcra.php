@@ -84,7 +84,7 @@ class MantisAcraPlugin extends MantisPlugin
   project_id 	  I  NOTNULL DEFAULT '0',
   issue_id      I NOTNULL DEFAULT '0',
   report_id     C(36) NOTNULL DEFAULT \" '' \",
-  report_fingerprint    X NOTNULL DEFAULT \" '' \",
+  report_fingerprint    C(32) NOTNULL DEFAULT \" '' \",
   file_path     X NOTNULL DEFAULT \" '' \",
   android_version     C(16) NOTNULL DEFAULT \" '' \",
   app_version     C(16) NOTNULL DEFAULT \" '' \",
@@ -575,9 +575,7 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
     {
         $begin_ts = microtime(true);
         set_time_limit(0);
-        if (acra_get_issue_id_by_report_id(gpc_get_string('REPORT_ID', '')) !== false) {
-            return;
-        }
+
         error_log("save_acra_issue enter");
         $t_app_version = gpc_get_string('APP_VERSION_NAME', '');
         $t_project_id = $p_project_id;
@@ -628,7 +626,11 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
         $acra_ext->app_version = $t_app_version;
         $acra_ext->crash_date = $this->covertTimeString(gpc_get_string('USER_CRASH_DATE', ''));
         $acra_ext->install_date = $this->covertTimeString(gpc_get_string('USER_APP_START_DATE', ''));
-        $acra_ext->create();
+        $t_result = $acra_ext->create();
+        if( $t_result === false ){
+            error_log("dumplicated report id");
+            return;
+        }
 
         error_log("save fingerprint ".$acra_ext->report_fingerprint." to acra issue:".$acra_ext->id);
         $t_duplicated_bug_id = '0';
