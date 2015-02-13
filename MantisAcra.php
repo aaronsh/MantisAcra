@@ -907,6 +907,9 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
             }
         }
 
+        if( count($lines) === 1 ){
+            $lines[] = date("Y-m-d h:i:s");
+        }
         $contents = implode("\n", $lines);
         error_log("stack trace:".$stack_trace);
         error_log("fingerprint_text:".$contents);
