@@ -890,9 +890,10 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
     function build_acra_issue_fingerprint($stack_trace, $packages)
     {
         $decoded = get_stack_map($stack_trace);
+        $exception = $decoded->exception;
+        $exception = preg_replace('/:?\s+.*$/i', '', $exception);
         $lines = array();
-        $parts = explode(" ", $decoded->exception);
-        $lines[] = $parts[0];
+        $lines[] = $exception;
 
         require("ProjectAcraExt.php");
         $app_packages = handle_project_package_list($packages);
