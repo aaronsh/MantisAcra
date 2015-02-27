@@ -909,7 +909,10 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
         }
 
         if( count($lines) === 1 ){
-            $lines[] = date("Y-m-d h:i:s");
+            //$lines[] = date("Y-m-d h:i:s");
+            foreach($decoded->stack as $entry){
+                 $lines[] = $entry->method.$entry->suffix;
+            }
         }
         $contents = implode("\n", $lines);
         error_log("stack trace:".$stack_trace);
