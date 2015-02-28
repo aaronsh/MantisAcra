@@ -575,8 +575,9 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
     {
         $begin_ts = microtime(true);
         set_time_limit(0);
+        $pid = "pid:".getmypid()." ";
 
-        error_log("save_acra_issue enter");
+        error_log($pid."save_acra_issue enter");
         $t_app_version = gpc_get_string('APP_VERSION_NAME', '');
         $t_project_id = $p_project_id;
         $t_fingerprint = $this->build_acra_issue_fingerprint(gpc_get_string('STACK_TRACE'), $packages);
@@ -585,8 +586,8 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
         if( $t_bug_id != false && $t_bug_id != '0' && $t_bug_id != '-1' ){
             //the bug id is valid
             if( bug_is_closed($t_bug_id) ){
-                error_log("the bug is closed");
-                error_log("save_acra_issue quit2 ".(microtime(true)-$begin_ts).'ms');
+                error_log($pid."the bug is closed");
+                error_log($pid."save_acra_issue quit2 ".(microtime(true)-$begin_ts).'ms');
                 return;
             }
         }
@@ -628,11 +629,11 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
         $acra_ext->install_date = $this->covertTimeString(gpc_get_string('USER_APP_START_DATE', ''));
         $t_result = $acra_ext->create();
         if( $t_result === false ){
-            error_log("dumplicated report id");
+            error_log($pid."dumplicated report id");
             return;
         }
 
-        error_log("save fingerprint ".$acra_ext->report_fingerprint." to acra issue:".$acra_ext->id);
+        error_log($pid."save fingerprint ".$acra_ext->report_fingerprint." to acra issue:".$acra_ext->id);
         $t_duplicated_bug_id = '0';
         $tries = 0;
         while ($tries < 30) {
@@ -660,7 +661,7 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
         if ($t_duplicated_bug_id == '0') {
             //new crash report, save a bug record
             $t_duplicated_bug_id = $this->save_bug($t_project_id, $t_user_id);
-            error_log("save bug ".$t_duplicated_bug_id);
+            error_log($pid."create bug ".$t_duplicated_bug_id.' for acra issue:'.$acra_ext->id.' fp:'.$t_fingerprint);
             //create version if possible
             $t_version_id = version_get_id($t_app_version, $t_project_id);
             if ($t_version_id === false) {
@@ -669,23 +670,23 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
             }
         }
         else{
-            error_log("exists bug ".$t_duplicated_bug_id);
+            error_log($pid."exists bug ".$t_duplicated_bug_id);
             if( !bug_is_closed($t_duplicated_bug_id) ) { //the bug is open
                 $t_notes = bugnote_get_all_bugnotes($t_duplicated_bug_id);
                 if( count($t_notes) < 20 ) { //we only accepts 20 crash records as notes for the reason of the speed of viewing bug detail page.
-                    error_log("acra issue is:".$acra_ext->id);
+                    error_log($pid."acra issue is:".$acra_ext->id);
                     $note_id = bugnote_add($t_duplicated_bug_id, gpc_get_string('STACK_TRACE'), '0:00', false, BUGNOTE, $acra_ext->id, $t_user_id, false, false );
-                    error_log("add note ".$note_id);
+                    error_log($pid."add note ".$note_id);
                 }
                 else{
                     bug_update_date($t_duplicated_bug_id);
-                    error_log("update bug time, not add note");
+                    error_log($pid."update bug time, not add note");
                 }
             }
             else{ //the bug is closed, do not accept crash report any more
                 acra_delete_bug_ext_by_id($acra_ext->id);
-                error_log("delete the acra issue because the bug is closed");
-                error_log("save_acra_issue quit1 ".(microtime(true)-$begin_ts).'ms');
+                error_log($pid."delete the acra issue because the bug is closed");
+                error_log($pid."save_acra_issue quit1 ".(microtime(true)-$begin_ts).'ms');
                 return;
             }
             /*
@@ -696,9 +697,9 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
             }
             */
         }
-        error_log("update bug id of acra issues which fingerprint is ".$t_fingerprint);
+        error_log($pid."update bug id of acra issues which fingerprint is ".$t_fingerprint);
         acra_update_bug_id_by_fingerprint($t_fingerprint, $t_duplicated_bug_id);
-        error_log("save_acra_issue quit0 ".(microtime(true)-$begin_ts).'ms');
+        error_log($pid."save_acra_issue quit0 ".(microtime(true)-$begin_ts).'ms');
     }
 
     function save_bug($p_project_id, $p_user_id)
@@ -911,7 +912,7 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
         if( count($lines) === 1 ){
             //$lines[] = date("Y-m-d h:i:s");
             foreach($decoded->stack as $entry){
-                 $lines[] = $entry->method.$entry->suffix;
+                 $lines[] = $entry->method;//.$entry->suffix;
             }
         }
         $contents = implode("\n", $lines);
