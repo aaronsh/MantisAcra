@@ -575,7 +575,7 @@ noteRow = document.getElementById('c<?php echo $note->id; ?>');
     {
         $begin_ts = microtime(true);
         set_time_limit(0);
-        $pid = "pid:".getmypid()."-".microtime()." ";
+        $pid = "pid:".getmypid()."-".md5(microtime(),true)." ";
 
         error_log($pid."save_acra_issue enter");
         $t_app_version = gpc_get_string('APP_VERSION_NAME', '');
